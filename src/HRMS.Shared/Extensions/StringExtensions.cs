@@ -17,7 +17,7 @@ namespace HRMS.Shared.Extensions
             return value[..(maxLength - suffix.Length)] + suffix;
         }
 
-        /// <summary>Converts a string to title case (first letter of each word capitalised).</summary>
+        /// <summary>Converts a string to title case (first letter of each word capitalized).</summary>
         public static string ToTitleCase(this string value)
         {
             if (string.IsNullOrWhiteSpace(value)) return value;

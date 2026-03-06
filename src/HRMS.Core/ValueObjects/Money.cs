@@ -26,11 +26,11 @@ namespace HRMS.Core.ValueObjects
             if (string.IsNullOrWhiteSpace(currency))
                 throw new ArgumentException("Currency code cannot be empty.", nameof(currency));
 
-            var normalisedCurrency = currency.Trim().ToUpperInvariant();
-            if (normalisedCurrency.Length != 3)
+            var normalizedCurrency = currency.Trim().ToUpperInvariant();
+            if (normalizedCurrency.Length != 3)
                 throw new ArgumentException("Currency code must be a 3-letter ISO 4217 code.", nameof(currency));
 
-            return new Money(Math.Round(amount, 2), normalisedCurrency);
+            return new Money(Math.Round(amount, 2), normalizedCurrency);
         }
 
         public Money Add(Money other)
