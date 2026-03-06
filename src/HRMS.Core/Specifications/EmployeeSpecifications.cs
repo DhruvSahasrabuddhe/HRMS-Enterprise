@@ -9,14 +9,14 @@ namespace HRMS.Core.Specifications
         public EmployeeWithDepartmentSpecification(int id)
             : base(e => e.Id == id)
         {
-            AddInclude(e => e.Department);
-            AddInclude(e => e.Manager);
+            AddInclude(e => e.Department!);
+            AddInclude(e => e.Manager!);
         }
 
         public EmployeeWithDepartmentSpecification(string departmentName)
             : base(e => e.Department != null && e.Department.Name != null && e.Department.Name.Contains(departmentName))
         {
-            AddInclude(e => e.Department);
+            AddInclude(e => e.Department!);
             ApplyOrderBy(e => e.LastName);
         }
     }
@@ -27,7 +27,7 @@ namespace HRMS.Core.Specifications
             : base(e => e.Status == EmployeeStatus.Active)
         {
             ApplyOrderBy(e => e.LastName);
-            AddInclude(e => e.Department);
+            AddInclude(e => e.Department!);
         }
     }
 
@@ -36,8 +36,8 @@ namespace HRMS.Core.Specifications
         public EmployeesByDepartmentSpecification(int departmentId)
             : base(e => e.DepartmentId == departmentId)
         {
-            AddInclude(e => e.Department);
-            AddInclude(e => e.Manager);
+            AddInclude(e => e.Department!);
+            AddInclude(e => e.Manager!);
         }
     }
 
@@ -46,8 +46,8 @@ namespace HRMS.Core.Specifications
         public EmployeesByManagerSpecification(int managerId)
             : base(e => e.ManagerId == managerId)
         {
-            AddInclude(e => e.Department);
-            AddInclude(e => e.Manager);
+            AddInclude(e => e.Department!);
+            AddInclude(e => e.Manager!);
         }
     }
 
@@ -56,7 +56,7 @@ namespace HRMS.Core.Specifications
         public EmployeesByStatusSpecification(EmployeeStatus status)
             : base(e => e.Status == status)
         {
-            AddInclude(e => e.Department);
+            AddInclude(e => e.Department!);
         }
     }
 }

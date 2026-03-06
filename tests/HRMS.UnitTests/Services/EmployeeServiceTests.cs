@@ -4,6 +4,7 @@ using FluentValidation.Results;
 using HRMS.Core.Entities;
 using HRMS.Core.Enums;
 using HRMS.Core.Interfaces.Repositories;
+using HRMS.Core.Interfaces.Services;
 using HRMS.Services.Employees;
 using HRMS.Services.Employees.Dtos;
 using HRMS.Services.Mappings;
@@ -25,6 +26,8 @@ namespace HRMS.UnitTests.Services
         private readonly IMemoryCache _cache;
         private readonly Mock<IValidator<CreateEmployeeDto>> _createValidatorMock;
         private readonly Mock<IValidator<UpdateEmployeeDto>> _updateValidatorMock;
+        private readonly Mock<IEmployeeCodeGenerator> _codeGeneratorMock;
+        private readonly Mock<IDateTimeProvider> _dateTimeProviderMock;
         private readonly EmployeeService _sut;
 
         public EmployeeServiceTests()
@@ -37,6 +40,8 @@ namespace HRMS.UnitTests.Services
             _loggerMock = new Mock<ILogger<EmployeeService>>();
             _createValidatorMock = new Mock<IValidator<CreateEmployeeDto>>();
             _updateValidatorMock = new Mock<IValidator<UpdateEmployeeDto>>();
+            _codeGeneratorMock = new Mock<IEmployeeCodeGenerator>();
+            _dateTimeProviderMock = new Mock<IDateTimeProvider>();
 
             _unitOfWorkMock.Setup(u => u.Employees).Returns(_employeeRepoMock.Object);
             _unitOfWorkMock.Setup(u => u.Departments).Returns(_departmentRepoMock.Object);
@@ -49,13 +54,20 @@ namespace HRMS.UnitTests.Services
             var opts = new MemoryCacheOptions();
             _cache = new MemoryCache(opts);
 
+            // Set up default date/time values
+            _dateTimeProviderMock.Setup(d => d.UtcNow).Returns(new DateTime(2026, 3, 6, 16, 0, 0, DateTimeKind.Utc));
+            _dateTimeProviderMock.Setup(d => d.Today).Returns(new DateTime(2026, 3, 6));
+            _dateTimeProviderMock.Setup(d => d.Now).Returns(new DateTime(2026, 3, 6, 16, 0, 0));
+
             _sut = new EmployeeService(
                 _unitOfWorkMock.Object,
                 _mapper,
                 _loggerMock.Object,
                 _cache,
                 _createValidatorMock.Object,
-                _updateValidatorMock.Object);
+                _updateValidatorMock.Object,
+                _codeGeneratorMock.Object,
+                _dateTimeProviderMock.Object);
         }
 
         [Fact]
@@ -179,9 +191,9 @@ namespace HRMS.UnitTests.Services
                 .Setup(r => r.IsEmailUniqueAsync(createDto.Email, It.IsAny<int?>()))
                 .ReturnsAsync(true);
 
-            _employeeRepoMock
-                .Setup(r => r.CountAsync(It.IsAny<System.Linq.Expressions.Expression<Func<Employee, bool>>>()))
-                .ReturnsAsync(0);
+            _codeGeneratorMock
+                .Setup(c => c.GenerateEmployeeCodeAsync())
+                .ReturnsAsync("EMP202600001");
 
             _employeeRepoMock
                 .Setup(r => r.AddAsync(It.IsAny<Employee>()))
@@ -198,6 +210,7 @@ namespace HRMS.UnitTests.Services
             Assert.NotNull(result);
             Assert.Equal("Carol", result.FirstName);
             Assert.Equal("White", result.LastName);
+            Assert.Equal("EMP202600001", result.EmployeeCode);
             _employeeRepoMock.Verify(r => r.AddAsync(It.IsAny<Employee>()), Times.Once);
             _unitOfWorkMock.Verify(u => u.CompleteAsync(), Times.Once);
         }

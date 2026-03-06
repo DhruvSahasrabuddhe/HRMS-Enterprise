@@ -4,6 +4,9 @@ using HRMS.Services.Leave.Dtos;
 
 namespace HRMS.Services.Validators
 {
+    /// <summary>
+    /// Validator for creating leave requests.
+    /// </summary>
     public class CreateLeaveRequestValidator : AbstractValidator<CreateLeaveRequestDto>
     {
         public CreateLeaveRequestValidator()
@@ -29,6 +32,9 @@ namespace HRMS.Services.Validators
         }
     }
 
+    /// <summary>
+    /// Validator for approving leave requests.
+    /// </summary>
     public class ApproveLeaveValidator : AbstractValidator<ApproveLeaveDto>
     {
         public ApproveLeaveValidator()
@@ -41,6 +47,9 @@ namespace HRMS.Services.Validators
         }
     }
 
+    /// <summary>
+    /// Validator for rejecting leave requests.
+    /// </summary>
     public class RejectLeaveValidator : AbstractValidator<RejectLeaveDto>
     {
         public RejectLeaveValidator()

@@ -3,12 +3,17 @@ using FluentValidation;
 using HRMS.Core.Entities;
 using HRMS.Core.Enums;
 using HRMS.Core.Interfaces.Repositories;
+using HRMS.Core.Interfaces.Services;
 using HRMS.Services.Employees.Dtos;
+using HRMS.Shared.Constants;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 
 namespace HRMS.Services.Employees
 {
+    /// <summary>
+    /// Service for managing employee operations including CRUD, search, and import/export.
+    /// </summary>
     public class EmployeeService : IEmployeeService
     {
         private readonly IUnitOfWork _unitOfWork;
@@ -17,6 +22,8 @@ namespace HRMS.Services.Employees
         private readonly IMemoryCache _cache;
         private readonly IValidator<CreateEmployeeDto> _createValidator;
         private readonly IValidator<UpdateEmployeeDto> _updateValidator;
+        private readonly IEmployeeCodeGenerator _codeGenerator;
+        private readonly IDateTimeProvider _dateTimeProvider;
 
         public EmployeeService(
             IUnitOfWork unitOfWork,
@@ -24,7 +31,9 @@ namespace HRMS.Services.Employees
             ILogger<EmployeeService> logger,
             IMemoryCache cache,
             IValidator<CreateEmployeeDto> createValidator,
-            IValidator<UpdateEmployeeDto> updateValidator)
+            IValidator<UpdateEmployeeDto> updateValidator,
+            IEmployeeCodeGenerator codeGenerator,
+            IDateTimeProvider dateTimeProvider)
         {
             _unitOfWork = unitOfWork;
             _mapper = mapper;
@@ -32,6 +41,8 @@ namespace HRMS.Services.Employees
             _cache = cache;
             _createValidator = createValidator;
             _updateValidator = updateValidator;
+            _codeGenerator = codeGenerator;
+            _dateTimeProvider = dateTimeProvider;
         }
 
         public async Task<EmployeeDto?> GetEmployeeByIdAsync(int id)
@@ -41,7 +52,7 @@ namespace HRMS.Services.Employees
                 _logger.LogInformation("Getting employee with ID: {EmployeeId}", id);
 
                 // Try to get from cache first
-                var cacheKey = $"employee_{id}";
+                var cacheKey = HrmsConstants.Cache.EmployeeKey(id);
                 if (_cache.TryGetValue(cacheKey, out EmployeeDto? cachedEmployee))
                 {
                     _logger.LogDebug("Employee {EmployeeId} found in cache", id);
@@ -57,8 +68,8 @@ namespace HRMS.Services.Employees
 
                 var employeeDto = _mapper.Map<EmployeeDto>(employee);
 
-                // Store in cache for 5 minutes
-                _cache.Set(cacheKey, employeeDto, TimeSpan.FromMinutes(5));
+                // Store in cache with default expiration
+                _cache.Set(cacheKey, employeeDto, TimeSpan.FromMinutes(HrmsConstants.Cache.DefaultExpirationMinutes));
 
                 return employeeDto;
             }
@@ -154,13 +165,13 @@ namespace HRMS.Services.Employees
                     throw new InvalidOperationException($"Email {createDto.Email} is already in use");
                 }
 
-                // Generate employee code
-                var employeeCode = await GenerateEmployeeCodeAsync();
+                // Generate employee code using the code generator service
+                var employeeCode = await _codeGenerator.GenerateEmployeeCodeAsync();
 
                 var employee = _mapper.Map<Employee>(createDto);
                 employee.EmployeeCode = employeeCode;
                 employee.Status = EmployeeStatus.Active;
-                employee.CreatedAt = DateTime.UtcNow;
+                employee.CreatedAt = _dateTimeProvider.UtcNow;
 
                 await _unitOfWork.Employees.AddAsync(employee);
                 await _unitOfWork.CompleteAsync();
@@ -169,7 +180,7 @@ namespace HRMS.Services.Employees
                     employee.Id, employee.EmployeeCode);
 
                 // Clear cache
-                _cache.Remove("employees_list");
+                _cache.Remove(HrmsConstants.Cache.EmployeeListKey);
 
                 return _mapper.Map<EmployeeDto>(employee);
             }
@@ -210,7 +221,7 @@ namespace HRMS.Services.Employees
                 }
 
                 _mapper.Map(updateDto, employee);
-                employee.UpdatedAt = DateTime.UtcNow;
+                employee.UpdatedAt = _dateTimeProvider.UtcNow;
 
                 _unitOfWork.Employees.Update(employee);
                 await _unitOfWork.CompleteAsync();
@@ -218,8 +229,8 @@ namespace HRMS.Services.Employees
                 _logger.LogInformation("Employee {EmployeeId} updated successfully", employee.Id);
 
                 // Clear cache
-                _cache.Remove($"employee_{employee.Id}");
-                _cache.Remove("employees_list");
+                _cache.Remove(HrmsConstants.Cache.EmployeeKey(employee.Id));
+                _cache.Remove(HrmsConstants.Cache.EmployeeListKey);
 
                 return _mapper.Map<EmployeeDto>(employee);
             }
@@ -245,7 +256,7 @@ namespace HRMS.Services.Employees
                 // Soft delete
                 employee.IsDeleted = true;
                 employee.Status = EmployeeStatus.Terminated;
-                employee.UpdatedAt = DateTime.UtcNow;
+                employee.UpdatedAt = _dateTimeProvider.UtcNow;
 
                 _unitOfWork.Employees.Update(employee);
                 await _unitOfWork.CompleteAsync();
@@ -253,8 +264,8 @@ namespace HRMS.Services.Employees
                 _logger.LogInformation("Employee {EmployeeId} deleted successfully", id);
 
                 // Clear cache
-                _cache.Remove($"employee_{id}");
-                _cache.Remove("employees_list");
+                _cache.Remove(HrmsConstants.Cache.EmployeeKey(id));
+                _cache.Remove(HrmsConstants.Cache.EmployeeListKey);
 
                 return true;
             }
@@ -280,20 +291,16 @@ namespace HRMS.Services.Employees
             return await _unitOfWork.Employees.CountAsync(e => !e.IsDeleted);
         }
 
-        public async Task<byte[]> ExportEmployeesToExcelAsync(EmployeeSearchDto searchDto)
+        public Task<byte[]> ExportEmployeesToExcelAsync(EmployeeSearchDto searchDto)
         {
-            // This would use a library like EPPlus to generate Excel
-            // For now, return empty byte array
             _logger.LogWarning("Excel export not implemented yet");
-            return await Task.FromResult(Array.Empty<byte>());
+            throw new NotImplementedException("Excel export functionality is not yet implemented. Please use a library like EPPlus or ClosedXML.");
         }
 
-        public async Task<int> ImportEmployeesFromExcelAsync(byte[] fileData)
+        public Task<int> ImportEmployeesFromExcelAsync(byte[] fileData)
         {
-            // This would use a library like EPPlus to read Excel
-            // For now, return 0
             _logger.LogWarning("Excel import not implemented yet");
-            return await Task.FromResult(0);
+            throw new NotImplementedException("Excel import functionality is not yet implemented. Please use a library like EPPlus or ClosedXML.");
         }
 
         public async Task<IEnumerable<EmployeeListDto>> GetEmployeesByDepartmentAsync(int departmentId)
@@ -308,27 +315,7 @@ namespace HRMS.Services.Employees
             return _mapper.Map<IEnumerable<EmployeeListDto>>(employees);
         }
 
-        private async Task<string> GenerateEmployeeCodeAsync()
-        {
-            var year = DateTime.Now.Year.ToString().Substring(2);
-            var lastEmployee = await _unitOfWork.Employees
-                .FindAsync(e => e.EmployeeCode.StartsWith($"EMP{year}"));
 
-            if (!lastEmployee.Any())
-            {
-                return $"EMP{year}0001";
-            }
-
-            var lastCode = lastEmployee
-                .Select(e => e.EmployeeCode)
-                .OrderByDescending(c => c)
-                .FirstOrDefault();
-
-            var lastNumber = int.Parse(lastCode.Substring(5));
-            var newNumber = lastNumber + 1;
-
-            return $"EMP{year}{newNumber:D4}";
-        }
 
         private IEnumerable<Employee> ApplySorting(IEnumerable<Employee> employees, EmployeeSearchDto searchDto)
         {
