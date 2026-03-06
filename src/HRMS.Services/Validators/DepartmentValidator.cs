@@ -1,5 +1,6 @@
 ﻿using FluentValidation;
 using HRMS.Services.Departments.Dtos;
+using System.Text.RegularExpressions;
 
 namespace HRMS.Services.Validators
 {
@@ -8,6 +9,9 @@ namespace HRMS.Services.Validators
     /// </summary>
     public class CreateDepartmentValidator : AbstractValidator<CreateDepartmentDto>
     {
+        // Regex to detect potentially dangerous HTML/script content
+        private static readonly Regex HtmlScriptPattern = new(@"<script|<iframe|javascript:|onerror=|onclick=", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
         public CreateDepartmentValidator()
         {
             RuleFor(x => x.Code)
@@ -17,7 +21,14 @@ namespace HRMS.Services.Validators
 
             RuleFor(x => x.Name)
                 .NotEmpty().WithMessage("Department name is required")
-                .MaximumLength(100).WithMessage("Department name cannot exceed 100 characters");
+                .MaximumLength(100).WithMessage("Department name cannot exceed 100 characters")
+                .Must(NotContainScriptTags).WithMessage("Department name contains potentially dangerous content");
+
+            RuleFor(x => x.Description)
+                .MaximumLength(500).When(x => !string.IsNullOrEmpty(x.Description))
+                .WithMessage("Description cannot exceed 500 characters")
+                .Must(NotContainScriptTags).When(x => !string.IsNullOrEmpty(x.Description))
+                .WithMessage("Description contains potentially dangerous content");
 
             RuleFor(x => x.Email)
                 .EmailAddress().When(x => !string.IsNullOrEmpty(x.Email))
@@ -32,7 +43,17 @@ namespace HRMS.Services.Validators
 
             RuleFor(x => x.Budget)
                 .GreaterThanOrEqualTo(0).When(x => x.Budget.HasValue)
-                .WithMessage("Budget must be a positive number");
+                .WithMessage("Budget must be a positive number")
+                .LessThan(1000000000).When(x => x.Budget.HasValue)
+                .WithMessage("Budget value seems unrealistic");
+        }
+
+        private bool NotContainScriptTags(string? value)
+        {
+            if (string.IsNullOrEmpty(value))
+                return true;
+
+            return !HtmlScriptPattern.IsMatch(value);
         }
     }
 
@@ -41,6 +62,9 @@ namespace HRMS.Services.Validators
     /// </summary>
     public class UpdateDepartmentValidator : AbstractValidator<UpdateDepartmentDto>
     {
+        // Regex to detect potentially dangerous HTML/script content
+        private static readonly Regex HtmlScriptPattern = new(@"<script|<iframe|javascript:|onerror=|onclick=", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
         public UpdateDepartmentValidator()
         {
             RuleFor(x => x.Id)
@@ -52,7 +76,16 @@ namespace HRMS.Services.Validators
 
             RuleFor(x => x.Name)
                 .NotEmpty().WithMessage("Department name is required")
-                .MaximumLength(100).WithMessage("Department name cannot exceed 100 characters");
+                .MaximumLength(100).WithMessage("Department name cannot exceed 100 characters")
+                .Must(NotContainScriptTags).WithMessage("Department name contains potentially dangerous content");
+        }
+
+        private bool NotContainScriptTags(string? value)
+        {
+            if (string.IsNullOrEmpty(value))
+                return true;
+
+            return !HtmlScriptPattern.IsMatch(value);
         }
     }
 }
