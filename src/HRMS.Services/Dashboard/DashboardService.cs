@@ -117,7 +117,7 @@ namespace HRMS.Services.Dashboard
             var recentHires = await _unitOfWork.Employees
                 .FindAsync(e => e.HireDate >= _dateTimeProvider.Today.AddDays(-HrmsConstants.Dashboard.RecentActivityDays));
 
-            foreach (var hire in recentHires.Take(HrmsConstants.Dashboard.RecentActivityLimit / 2))
+            foreach (var hire in recentHires.Take(HrmsConstants.Dashboard.RecentActivityHiresLimit))
             {
                 activities.Add(new RecentActivityDto
                 {
@@ -133,7 +133,7 @@ namespace HRMS.Services.Dashboard
             var recentLeaves = await _unitOfWork.Leaves
                 .FindAsync(l => l.CreatedAt >= _dateTimeProvider.Today.AddDays(-HrmsConstants.Dashboard.UpcomingLeavesDays));
 
-            foreach (var leave in recentLeaves.Take(HrmsConstants.Dashboard.RecentActivityLimit / 2))
+            foreach (var leave in recentLeaves.Take(HrmsConstants.Dashboard.RecentActivityLeavesLimit))
             {
                 activities.Add(new RecentActivityDto
                 {

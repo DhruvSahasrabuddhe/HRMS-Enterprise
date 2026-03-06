@@ -73,6 +73,8 @@ namespace HRMS.Shared.Constants
         {
             public const int RecentActivityDays = 30;
             public const int RecentActivityLimit = 10;
+            public const int RecentActivityHiresLimit = 5;
+            public const int RecentActivityLeavesLimit = 5;
             public const int UpcomingLeavesDays = 7;
             public const int ChartMonthsToShow = 6;
         }
