@@ -3,6 +3,9 @@ using HRMS.Services.Employees.Dtos;
 
 namespace HRMS.Services.Validators
 {
+    /// <summary>
+    /// Validator for creating new employee records.
+    /// </summary>
     public class CreateEmployeeValidator : AbstractValidator<CreateEmployeeDto>
     {
         public CreateEmployeeValidator()
@@ -46,6 +49,9 @@ namespace HRMS.Services.Validators
         }
     }
 
+    /// <summary>
+    /// Validator for updating existing employee records.
+    /// </summary>
     public class UpdateEmployeeValidator : AbstractValidator<UpdateEmployeeDto>
     {
         public UpdateEmployeeValidator()
