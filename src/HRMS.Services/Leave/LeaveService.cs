@@ -4,11 +4,15 @@ using HRMS.Core.Entities;
 using HRMS.Core.Enums;
 using HRMS.Core.Interfaces.Repositories;
 using HRMS.Services.Leave.Dtos;
+using HRMS.Shared.Constants;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Caching.Memory;
 
 namespace HRMS.Services.Leave
 {
+    /// <summary>
+    /// Service for managing leave requests, balances, and approvals.
+    /// </summary>
     public class LeaveService : ILeaveService
     {
         private readonly IUnitOfWork _unitOfWork;
@@ -43,7 +47,7 @@ namespace HRMS.Services.Leave
             {
                 _logger.LogInformation("Getting leave request with ID: {LeaveRequestId}", id);
 
-                var cacheKey = $"leave_{id}";
+                var cacheKey = HrmsConstants.Cache.LeaveKey(id);
                 if (_cache.TryGetValue(cacheKey, out LeaveRequestDto? cachedLeave))
                 {
                     return cachedLeave;
@@ -57,7 +61,7 @@ namespace HRMS.Services.Leave
                 }
 
                 var leaveDto = _mapper.Map<LeaveRequestDto>(leaveRequest);
-                _cache.Set(cacheKey, leaveDto, TimeSpan.FromMinutes(5));
+                _cache.Set(cacheKey, leaveDto, TimeSpan.FromMinutes(HrmsConstants.Cache.DefaultExpirationMinutes));
 
                 return leaveDto;
             }
@@ -74,7 +78,7 @@ namespace HRMS.Services.Leave
             {
                 _logger.LogInformation("Getting all leave requests");
 
-                var cacheKey = "all_leaves";
+                var cacheKey = HrmsConstants.Cache.AllLeavesKey;
                 if (_cache.TryGetValue(cacheKey, out IEnumerable<LeaveRequestDto>? cachedLeaves))
                 {
                     return cachedLeaves ?? Enumerable.Empty<LeaveRequestDto>();
@@ -83,7 +87,7 @@ namespace HRMS.Services.Leave
                 var leaveRequests = await _unitOfWork.Leaves.GetAllAsync();
                 var leaveDtos = _mapper.Map<IEnumerable<LeaveRequestDto>>(leaveRequests);
 
-                _cache.Set(cacheKey, leaveDtos, TimeSpan.FromMinutes(5));
+                _cache.Set(cacheKey, leaveDtos, TimeSpan.FromMinutes(HrmsConstants.Cache.DefaultExpirationMinutes));
 
                 return leaveDtos;
             }
