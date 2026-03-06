@@ -111,5 +111,60 @@ namespace HRMS.Shared.Constants
             public const int MonthsInYear = 12;
             public const int WorkingDaysPerWeek = 5;
         }
+
+        /// <summary>
+        /// Security-related constants for password policies, encryption, and rate limiting.
+        /// </summary>
+        public static class Security
+        {
+            // Password Policy
+            public const int MinPasswordLength = 12;
+            public const int MaxPasswordLength = 100;
+            public const bool RequireDigit = true;
+            public const bool RequireLowercase = true;
+            public const bool RequireUppercase = true;
+            public const bool RequireNonAlphanumeric = true;
+            public const int RequiredUniqueChars = 4;
+
+            // Account Lockout
+            public const int MaxFailedAccessAttempts = 5;
+            public const int LockoutDurationMinutes = 15;
+            public const bool AllowedForNewUsers = true;
+
+            // Rate Limiting
+            public const int GeneralRateLimitRequests = 100;
+            public const int GeneralRateLimitPeriodSeconds = 60;
+            public const int AuthRateLimitRequests = 5;
+            public const int AuthRateLimitPeriodSeconds = 60;
+
+            // Encryption
+            public const string EncryptionKeyConfigName = "Encryption:Key";
+            public const string EncryptionIVConfigName = "Encryption:IV";
+
+            // Data Masking
+            public const char MaskCharacter = '*';
+            public const int UnmaskedPrefixLength = 2;
+            public const int UnmaskedSuffixLength = 2;
+
+            // Security Headers
+            public const string XFrameOptionsValue = "DENY";
+            public const string XContentTypeOptionsValue = "nosniff";
+            public const string XXssProtectionValue = "1; mode=block";
+            public const string ContentSecurityPolicy = "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:;";
+            public const string ReferrerPolicyValue = "strict-origin-when-cross-origin";
+        }
+
+        /// <summary>
+        /// Sensitive data field names for encryption and masking.
+        /// </summary>
+        public static class SensitiveFields
+        {
+            public const string NationalId = "NationalId";
+            public const string PassportNumber = "PassportNumber";
+            public const string BankAccount = "BankAccount";
+            public const string Salary = "Salary";
+            public const string BankName = "BankName";
+            public const string BankBranch = "BankBranch";
+        }
     }
 }
