@@ -2,6 +2,7 @@ using HRMS.Shared.Constants;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using System.Security.Cryptography;
 
 namespace HRMS.Infrastructure.Data
 {
@@ -128,30 +129,38 @@ namespace HRMS.Infrastructure.Data
             const string special = "!@#$%^&*";
             const int passwordLength = 16;
 
-            var random = new Random();
             var password = new char[passwordLength];
 
             // Ensure at least one character from each required set
-            password[0] = uppercase[random.Next(uppercase.Length)];
-            password[1] = lowercase[random.Next(lowercase.Length)];
-            password[2] = digits[random.Next(digits.Length)];
-            password[3] = special[random.Next(special.Length)];
+            password[0] = GetRandomChar(uppercase);
+            password[1] = GetRandomChar(lowercase);
+            password[2] = GetRandomChar(digits);
+            password[3] = GetRandomChar(special);
 
             // Fill remaining positions with random characters from all sets
             var allChars = uppercase + lowercase + digits + special;
             for (int i = 4; i < passwordLength; i++)
             {
-                password[i] = allChars[random.Next(allChars.Length)];
+                password[i] = GetRandomChar(allChars);
             }
 
             // Shuffle the password to avoid predictable patterns
             for (int i = passwordLength - 1; i > 0; i--)
             {
-                int j = random.Next(i + 1);
+                int j = RandomNumberGenerator.GetInt32(i + 1);
                 (password[i], password[j]) = (password[j], password[i]);
             }
 
             return new string(password);
+        }
+
+        /// <summary>
+        /// Gets a cryptographically random character from the specified character set.
+        /// </summary>
+        private static char GetRandomChar(string chars)
+        {
+            var index = RandomNumberGenerator.GetInt32(chars.Length);
+            return chars[index];
         }
     }
 }
