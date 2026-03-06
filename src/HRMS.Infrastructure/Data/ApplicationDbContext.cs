@@ -1,5 +1,6 @@
 ﻿using HRMS.Core.Entities;
 using HRMS.Core.Entities.Base;
+using HRMS.Core.Interfaces.Services;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
@@ -8,9 +9,19 @@ namespace HRMS.Infrastructure.Data
 {
     public class ApplicationDbContext : IdentityDbContext
     {
+        private readonly ICurrentUserService? _currentUserService;
+
         public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
             : base(options)
         {
+        }
+
+        public ApplicationDbContext(
+            DbContextOptions<ApplicationDbContext> options,
+            ICurrentUserService currentUserService)
+            : base(options)
+        {
+            _currentUserService = currentUserService;
         }
 
         // DbSets
@@ -177,8 +188,7 @@ namespace HRMS.Infrastructure.Data
 
         private string? GetCurrentUser()
         {
-            // This will be implemented later with HttpContextAccessor
-            return "System";
+            return _currentUserService?.UserName ?? "System";
         }
     }
 }

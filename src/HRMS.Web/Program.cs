@@ -1,11 +1,18 @@
 using FluentValidation;
 using FluentValidation.AspNetCore;
+using HRMS.Core.CQRS;
 using HRMS.Core.Interfaces.Repositories;
+using HRMS.Core.Interfaces.Services;
 using HRMS.Infrastructure.Data;
 using HRMS.Infrastructure.Repositories;
+using HRMS.Infrastructure.Services;
 using HRMS.Services.Dashboard;
 using HRMS.Services.Departments;
 using HRMS.Services.Employees;
+using HRMS.Services.Employees.Commands;
+using HRMS.Services.Employees.Dtos;
+using HRMS.Services.Employees.Handlers;
+using HRMS.Services.Employees.Queries;
 using HRMS.Services.Leave;
 using HRMS.Services.Mappings;
 using HRMS.Services.Validators;
@@ -17,6 +24,12 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 builder.Services.AddControllersWithViews();
 builder.Services.AddRazorPages();
+
+// Add HttpContextAccessor (registered early so it can be used by DbContext)
+builder.Services.AddHttpContextAccessor();
+
+// Add current-user service (resolves identity from HTTP context)
+builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
 
 // Add DbContext
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
@@ -37,12 +50,21 @@ builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 builder.Services.AddScoped<IEmployeeRepository, EmployeeRepository>();
 builder.Services.AddScoped<IDepartmentRepository, DepartmentRepository>();
 builder.Services.AddScoped<ILeaveRepository, LeaveRepository>();
+builder.Services.AddScoped<IAttendanceRepository, AttendanceRepository>();
 
 // Add Services
 builder.Services.AddScoped<IEmployeeService, EmployeeService>();
 builder.Services.AddScoped<IDepartmentService, DepartmentService>();
 builder.Services.AddScoped<ILeaveService, LeaveService>();
 builder.Services.AddScoped<IDashboardService, DashboardService>();
+
+// Register CQRS handlers for Employee domain
+builder.Services.AddScoped<ICommandHandler<CreateEmployeeCommand, EmployeeDto>, CreateEmployeeCommandHandler>();
+builder.Services.AddScoped<ICommandHandler<UpdateEmployeeCommand, EmployeeDto>, UpdateEmployeeCommandHandler>();
+builder.Services.AddScoped<ICommandHandler<DeleteEmployeeCommand, Unit>, DeleteEmployeeCommandHandler>();
+builder.Services.AddScoped<IQueryHandler<GetEmployeeByIdQuery, EmployeeDto?>, GetEmployeeByIdQueryHandler>();
+builder.Services.AddScoped<IQueryHandler<GetAllEmployeesQuery, IEnumerable<EmployeeListDto>>, GetAllEmployeesQueryHandler>();
+builder.Services.AddScoped<IQueryHandler<SearchEmployeesQuery, IEnumerable<EmployeeListDto>>, SearchEmployeesQueryHandler>();
 
 // Add AutoMapper
 builder.Services.AddAutoMapper(typeof(MappingProfile));
@@ -53,9 +75,6 @@ builder.Services.AddValidatorsFromAssemblyContaining<CreateEmployeeValidator>();
 
 // Add Memory Cache
 builder.Services.AddMemoryCache();
-
-// Add HttpContextAccessor
-builder.Services.AddHttpContextAccessor();
 
 var app = builder.Build();
 
