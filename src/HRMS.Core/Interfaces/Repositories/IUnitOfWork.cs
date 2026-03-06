@@ -5,6 +5,7 @@
         IEmployeeRepository Employees { get; }
         IDepartmentRepository Departments { get; }
         ILeaveRepository Leaves { get; }
+        IAttendanceRepository Attendances { get; }
 
         Task<int> CompleteAsync();
         Task BeginTransactionAsync();

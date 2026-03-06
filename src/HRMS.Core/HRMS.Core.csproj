@@ -11,6 +11,10 @@
 	</ItemGroup>
 
 	<ItemGroup>
+		<ProjectReference Include="..\HRMS.Shared\HRMS.Shared.csproj" />
+	</ItemGroup>
+
+	<ItemGroup>
 	  <Folder Include="Interfaces\Services\" />
 	</ItemGroup>
 

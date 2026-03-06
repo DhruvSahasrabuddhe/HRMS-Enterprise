@@ -13,6 +13,7 @@ namespace HRMS.Infrastructure.Repositories
         private IEmployeeRepository? _employeeRepository;
         private IDepartmentRepository? _departmentRepository;
         private ILeaveRepository? _leaveRepository;
+        private IAttendanceRepository? _attendanceRepository;
 
         public UnitOfWork(ApplicationDbContext context)
         {
@@ -27,6 +28,9 @@ namespace HRMS.Infrastructure.Repositories
 
         public ILeaveRepository Leaves =>
             _leaveRepository ??= new LeaveRepository(_context);
+
+        public IAttendanceRepository Attendances =>
+            _attendanceRepository ??= new AttendanceRepository(_context);
 
         public async Task<int> CompleteAsync()
         {

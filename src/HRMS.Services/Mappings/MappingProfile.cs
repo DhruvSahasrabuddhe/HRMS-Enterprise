@@ -2,6 +2,7 @@
 using HRMS.Core.Entities;
 using HRMS.Core.Enums;
 using HRMS.Services.Departments.Dtos;
+using HRMS.Services.Employees.Commands;
 using HRMS.Services.Employees.Dtos;
 using HRMS.Services.Leave.Dtos;
 
@@ -91,6 +92,10 @@ namespace HRMS.Services.Mappings
                     opt => opt.MapFrom(src => LeaveStatus.Pending))
                 .ForMember(dest => dest.TotalDays,
                     opt => opt.Ignore());
+
+            // CQRS command → DTO mappings (commands map to existing DTOs for validation reuse)
+            CreateMap<CreateEmployeeCommand, CreateEmployeeDto>();
+            CreateMap<UpdateEmployeeCommand, UpdateEmployeeDto>();
         }
     }
 }
