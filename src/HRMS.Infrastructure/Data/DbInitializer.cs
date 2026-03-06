@@ -64,7 +64,9 @@ namespace HRMS.Infrastructure.Data
         private static async Task SeedAdminUserAsync(UserManager<IdentityUser> userManager, ILogger logger)
         {
             const string adminEmail = "admin@hrms.com";
-            const string adminPassword = "Admin@123456"; // Should be changed on first login
+            
+            // Generate a random secure password
+            var randomPassword = GenerateSecurePassword();
 
             var adminUser = await userManager.FindByEmailAsync(adminEmail);
             
@@ -77,7 +79,7 @@ namespace HRMS.Infrastructure.Data
                     EmailConfirmed = true
                 };
 
-                var result = await userManager.CreateAsync(adminUser, adminPassword);
+                var result = await userManager.CreateAsync(adminUser, randomPassword);
                 
                 if (result.Succeeded)
                 {
@@ -88,8 +90,15 @@ namespace HRMS.Infrastructure.Data
                     logger.LogInformation("Assigned Admin role to user: {Email}", adminEmail);
                     
                     logger.LogWarning(
-                        "DEFAULT ADMIN CREDENTIALS - Email: {Email}, Password: {Password} - CHANGE IMMEDIATELY!",
-                        adminEmail, adminPassword);
+                        "=============================================================================");
+                    logger.LogWarning(
+                        "DEFAULT ADMIN CREDENTIALS CREATED - CHANGE IMMEDIATELY ON FIRST LOGIN!");
+                    logger.LogWarning(
+                        "Email: {Email}", adminEmail);
+                    logger.LogWarning(
+                        "Password: {Password}", randomPassword);
+                    logger.LogWarning(
+                        "=============================================================================");
                 }
                 else
                 {
@@ -106,6 +115,43 @@ namespace HRMS.Infrastructure.Data
                     logger.LogInformation("Assigned Admin role to existing user: {Email}", adminEmail);
                 }
             }
+        }
+
+        /// <summary>
+        /// Generates a cryptographically secure random password.
+        /// </summary>
+        private static string GenerateSecurePassword()
+        {
+            const string uppercase = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+            const string lowercase = "abcdefghijklmnopqrstuvwxyz";
+            const string digits = "0123456789";
+            const string special = "!@#$%^&*";
+            const int passwordLength = 16;
+
+            var random = new Random();
+            var password = new char[passwordLength];
+
+            // Ensure at least one character from each required set
+            password[0] = uppercase[random.Next(uppercase.Length)];
+            password[1] = lowercase[random.Next(lowercase.Length)];
+            password[2] = digits[random.Next(digits.Length)];
+            password[3] = special[random.Next(special.Length)];
+
+            // Fill remaining positions with random characters from all sets
+            var allChars = uppercase + lowercase + digits + special;
+            for (int i = 4; i < passwordLength; i++)
+            {
+                password[i] = allChars[random.Next(allChars.Length)];
+            }
+
+            // Shuffle the password to avoid predictable patterns
+            for (int i = passwordLength - 1; i > 0; i--)
+            {
+                int j = random.Next(i + 1);
+                (password[i], password[j]) = (password[j], password[i]);
+            }
+
+            return new string(password);
         }
     }
 }

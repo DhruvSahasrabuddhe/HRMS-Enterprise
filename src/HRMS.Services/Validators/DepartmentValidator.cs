@@ -1,5 +1,6 @@
 ﻿using FluentValidation;
 using HRMS.Services.Departments.Dtos;
+using HRMS.Shared.Constants;
 using System.Text.RegularExpressions;
 
 namespace HRMS.Services.Validators
@@ -44,7 +45,7 @@ namespace HRMS.Services.Validators
             RuleFor(x => x.Budget)
                 .GreaterThanOrEqualTo(0).When(x => x.Budget.HasValue)
                 .WithMessage("Budget must be a positive number")
-                .LessThan(1000000000).When(x => x.Budget.HasValue)
+                .LessThan(HrmsConstants.Validation.MaxRealisticBudget).When(x => x.Budget.HasValue)
                 .WithMessage("Budget value seems unrealistic");
         }
 

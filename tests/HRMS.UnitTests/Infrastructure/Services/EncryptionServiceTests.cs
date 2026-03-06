@@ -158,7 +158,7 @@ namespace HRMS.UnitTests.Infrastructure.Services
         }
 
         [Fact]
-        public void Decrypt_WithInvalidCipherText_ReturnsNull()
+        public void Decrypt_WithInvalidCipherText_ReturnsOriginalValue()
         {
             // Arrange
             var invalidCipherText = "ThisIsNotValidBase64!@#$%";

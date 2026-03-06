@@ -155,6 +155,19 @@ namespace HRMS.Shared.Constants
         }
 
         /// <summary>
+        /// Validation constants for business rules and limits.
+        /// </summary>
+        public static class Validation
+        {
+            // Salary and budget limits
+            public const decimal MaxRealisticSalary = 10_000_000;
+            public const decimal MaxRealisticBudget = 1_000_000_000;
+
+            // File upload
+            public const int UniqueFileNameGuidLength = 8;
+        }
+
+        /// <summary>
         /// Sensitive data field names for encryption and masking.
         /// </summary>
         public static class SensitiveFields

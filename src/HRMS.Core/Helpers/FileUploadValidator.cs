@@ -1,3 +1,5 @@
+using HRMS.Shared.Constants;
+
 namespace HRMS.Core.Helpers
 {
     /// <summary>
@@ -162,7 +164,7 @@ namespace HRMS.Core.Helpers
             var nameWithoutExtension = Path.GetFileNameWithoutExtension(sanitizedName);
             
             var timestamp = DateTime.UtcNow.ToString("yyyyMMddHHmmss");
-            var uniqueId = Guid.NewGuid().ToString("N").Substring(0, 8);
+            var uniqueId = Guid.NewGuid().ToString("N").Substring(0, HrmsConstants.Validation.UniqueFileNameGuidLength);
 
             return $"{nameWithoutExtension}_{timestamp}_{uniqueId}{extension}";
         }

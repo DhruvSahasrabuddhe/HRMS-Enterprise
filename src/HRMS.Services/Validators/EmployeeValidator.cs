@@ -1,5 +1,6 @@
 ﻿using FluentValidation;
 using HRMS.Services.Employees.Dtos;
+using HRMS.Shared.Constants;
 using System.Text.RegularExpressions;
 
 namespace HRMS.Services.Validators
@@ -58,7 +59,7 @@ namespace HRMS.Services.Validators
 
             RuleFor(x => x.Salary)
                 .GreaterThanOrEqualTo(0).WithMessage("Salary must be a positive number")
-                .LessThan(10000000).WithMessage("Salary value seems unrealistic");
+                .LessThan(HrmsConstants.Validation.MaxRealisticSalary).WithMessage("Salary value seems unrealistic");
 
             RuleFor(x => x.DepartmentId)
                 .GreaterThan(0).WithMessage("Valid department is required");
@@ -168,7 +169,7 @@ namespace HRMS.Services.Validators
 
             RuleFor(x => x.Salary)
                 .GreaterThanOrEqualTo(0).WithMessage("Salary must be a positive number")
-                .LessThan(10000000).WithMessage("Salary value seems unrealistic");
+                .LessThan(HrmsConstants.Validation.MaxRealisticSalary).WithMessage("Salary value seems unrealistic");
 
             RuleFor(x => x.DepartmentId)
                 .GreaterThan(0).WithMessage("Valid department is required");

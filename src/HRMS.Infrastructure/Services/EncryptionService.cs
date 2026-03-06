@@ -86,12 +86,13 @@ namespace HRMS.Infrastructure.Services
             }
             catch (CryptographicException)
             {
-                // Return null or empty if decryption fails (corrupted data)
-                return null;
+                // Return original value if decryption fails - likely not encrypted data
+                // This provides backward compatibility for data stored before encryption was enabled
+                return cipherText;
             }
             catch (FormatException)
             {
-                // Return original value if it's not encrypted (backward compatibility)
+                // Return original value if it's not valid Base64 - not encrypted data
                 return cipherText;
             }
         }

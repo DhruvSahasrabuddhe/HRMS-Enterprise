@@ -18,10 +18,10 @@ To prevent brute-force attacks:
 - Applies to all users including new accounts
 
 ### Default Credentials
-A default admin account is created on first run:
+A default admin account is created on first run with a randomly generated secure password:
 - **Email**: admin@hrms.com
-- **Password**: Admin@123456
-- ⚠️ **IMPORTANT**: Change this password immediately after first login!
+- **Password**: *Displayed in console logs on first run*
+- ⚠️ **IMPORTANT**: The password is randomly generated and shown only once in the logs. Copy it immediately and change it after first login!
 
 ### Roles
 The following roles are available:
@@ -39,23 +39,24 @@ Sensitive fields are encrypted at rest using AES-256:
 - Bank Account Number
 
 ### Encryption Key Management
-For **development**, encryption keys are in `appsettings.Development.json`.
+Encryption keys should **NEVER** be committed to source control.
 
-For **production**, use one of these secure methods:
-
-#### Option 1: User Secrets (for local development)
+For **development**, use .NET User Secrets:
 ```bash
+cd src/HRMS.Web
 dotnet user-secrets set "Encryption:Key" "<your-32-byte-base64-key>"
 dotnet user-secrets set "Encryption:IV" "<your-16-byte-base64-iv>"
 ```
 
-#### Option 2: Environment Variables
+For **production**, use one of these secure methods:
+
+#### Option 1: Environment Variables
 ```bash
 export Encryption__Key="<your-32-byte-base64-key>"
 export Encryption__IV="<your-16-byte-base64-iv>"
 ```
 
-#### Option 3: Azure Key Vault (recommended for production)
+#### Option 2: Azure Key Vault (recommended for production)
 Configure Azure Key Vault in `Program.cs`:
 ```csharp
 builder.Configuration.AddAzureKeyVault(
