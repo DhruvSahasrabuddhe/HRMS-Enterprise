@@ -317,6 +317,49 @@ namespace HRMS.Shared.Constants
         }
 
         /// <summary>
+        /// REST API versioning, route, and header constants.
+        /// </summary>
+        public static class Api
+        {
+            /// <summary>Current API version string used in route prefixes.</summary>
+            public const string CurrentVersion = "v1";
+
+            /// <summary>Route prefix for all versioned API endpoints.</summary>
+            public const string RoutePrefix = "api/v1";
+
+            /// <summary>OpenAPI document title shown in Swagger UI.</summary>
+            public const string Title = "HRMS Enterprise API";
+
+            /// <summary>OpenAPI document description.</summary>
+            public const string Description = "Human Resource Management System – RESTful API";
+
+            // ── Standard response-header names ──────────────────────────────────
+
+            /// <summary>Header returned with every API response indicating the total number of items.</summary>
+            public const string TotalCountHeader = "X-Total-Count";
+
+            /// <summary>Header returned with every API response indicating total pages.</summary>
+            public const string TotalPagesHeader = "X-Total-Pages";
+
+            /// <summary>Header returned with every API response indicating the current page.</summary>
+            public const string CurrentPageHeader = "X-Current-Page";
+
+            /// <summary>Header returned with every API response indicating the page size.</summary>
+            public const string PageSizeHeader = "X-Page-Size";
+
+            // ── Rate-limit response headers (RFC draft-ietf-httpapi-ratelimit-headers) ──
+
+            /// <summary>Rate-limit quota header name.</summary>
+            public const string RateLimitLimitHeader = "X-RateLimit-Limit";
+
+            /// <summary>Remaining quota header name.</summary>
+            public const string RateLimitRemainingHeader = "X-RateLimit-Remaining";
+
+            /// <summary>UTC epoch (seconds) when the quota resets.</summary>
+            public const string RateLimitResetHeader = "X-RateLimit-Reset";
+        }
+
+        /// <summary>
         /// Health-check endpoint and check-name constants.
         /// </summary>
         public static class HealthChecks
