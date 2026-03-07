@@ -18,12 +18,17 @@
   </ItemGroup>
 
   <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Using Include="Xunit" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\HRMS.Core\HRMS.Core.csproj" />
     <ProjectReference Include="..\..\src\HRMS.Services\HRMS.Services.csproj" />
+    <ProjectReference Include="..\..\src\HRMS.Web\HRMS.Web.csproj" />
   </ItemGroup>
 
 </Project>
