@@ -1,0 +1,138 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hrms-web
+  namespace: hrms
+  labels:
+    app.kubernetes.io/name: hrms-enterprise
+    app.kubernetes.io/component: web
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: hrms-web
+  # Rolling update – ensures zero downtime during deployments
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1          # one extra pod during rollout
+      maxUnavailable: 0    # never reduce available capacity below desired
+  template:
+    metadata:
+      labels:
+        app: hrms-web
+        app.kubernetes.io/name: hrms-enterprise
+        app.kubernetes.io/component: web
+      annotations:
+        # Trigger rolling restart when ConfigMap or Secret changes
+        checksum/config: "{{ include (print $.Template.BasePath \"/configmap.yaml\") . | sha256sum }}"
+    spec:
+      # Graceful shutdown: allow 60 s for in-flight requests to drain
+      terminationGracePeriodSeconds: 60
+
+      # Spread pods across nodes for high availability
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: DoNotSchedule
+          labelSelector:
+            matchLabels:
+              app: hrms-web
+
+      containers:
+        - name: hrms-web
+          image: IMAGE_TAG_PLACEHOLDER     # substituted by CD workflow
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8080
+              protocol: TCP
+              name: http
+
+          # Configuration from ConfigMap
+          envFrom:
+            - configMapRef:
+                name: hrms-config
+
+          # Secrets mounted as environment variables
+          env:
+            - name: ConnectionStrings__DefaultConnection
+              valueFrom:
+                secretKeyRef:
+                  name: hrms-secrets
+                  key: ConnectionStrings__DefaultConnection
+            - name: ConnectionStrings__Redis
+              valueFrom:
+                secretKeyRef:
+                  name: hrms-secrets
+                  key: ConnectionStrings__Redis
+            - name: Encryption__Key
+              valueFrom:
+                secretKeyRef:
+                  name: hrms-secrets
+                  key: Encryption__Key
+            - name: Encryption__IV
+              valueFrom:
+                secretKeyRef:
+                  name: hrms-secrets
+                  key: Encryption__IV
+
+          # Liveness probe – restart if the app is stuck
+          livenessProbe:
+            httpGet:
+              path: /health/live
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 15
+            timeoutSeconds: 5
+            failureThreshold: 3
+            successThreshold: 1
+
+          # Readiness probe – remove from load-balancer until healthy
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 20
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+            successThreshold: 1
+
+          # Startup probe – give extra time on cold start / DB migration
+          startupProbe:
+            httpGet:
+              path: /health/live
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 30   # up to 5 minutes on startup
+
+          resources:
+            requests:
+              cpu: 250m
+              memory: 256Mi
+            limits:
+              cpu: 1000m
+              memory: 512Mi
+
+          # Read-only root filesystem for security
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1001
+            runAsGroup: 1001
+            readOnlyRootFilesystem: false   # ASP.NET writes temp files
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: [ "ALL" ]
+
+          volumeMounts:
+            - name: logs
+              mountPath: /app/logs
+
+      volumes:
+        - name: logs
+          emptyDir: {}
+
+      securityContext:
+        fsGroup: 1001

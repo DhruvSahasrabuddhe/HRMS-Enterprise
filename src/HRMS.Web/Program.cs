@@ -40,6 +40,14 @@ try
 {
     var builder = WebApplication.CreateBuilder(args);
 
+    // ─── Graceful shutdown: allow 30 s for in-flight requests to drain ───────────
+    // The Kubernetes terminationGracePeriodSeconds (60 s) gives an additional
+    // buffer on top of this for tini and the OS to clean up.
+    builder.Services.Configure<HostOptions>(options =>
+    {
+        options.ShutdownTimeout = TimeSpan.FromSeconds(30);
+    });
+
     // ─── Serilog: structured JSON logging read from appsettings ─────────────────
     builder.Host.UseSerilog((context, services, configuration) =>
         configuration
@@ -149,6 +157,11 @@ try
     var redisConnectionString = builder.Configuration.GetConnectionString("Redis");
     if (!string.IsNullOrWhiteSpace(redisConnectionString))
     {
+        // Register a shared multiplexer singleton so both the cache and the health
+        // check reuse the same underlying connection pool.
+        builder.Services.AddSingleton<StackExchange.Redis.IConnectionMultiplexer>(
+            _ => StackExchange.Redis.ConnectionMultiplexer.Connect(redisConnectionString));
+
         builder.Services.AddStackExchangeRedisCache(options =>
         {
             options.Configuration = redisConnectionString;
@@ -167,6 +180,9 @@ try
     builder.Services.AddHealthChecks()
         .AddCheck<DatabaseHealthCheck>(
             HrmsConstants.HealthChecks.DatabaseCheckName,
+            tags: [HrmsConstants.HealthChecks.InfrastructureTag])
+        .AddCheck<RedisHealthCheck>(
+            HrmsConstants.HealthChecks.RedisCheckName,
             tags: [HrmsConstants.HealthChecks.InfrastructureTag])
         .AddCheck<HrmsBusinessHealthCheck>(
             "hrms-business",

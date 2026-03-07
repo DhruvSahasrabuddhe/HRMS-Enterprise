@@ -1,0 +1,33 @@
+# docker-compose.override.yml
+# Development overrides – automatically merged by docker compose.
+# Enables hot-reload, verbose logging, and relaxed secret requirements.
+
+services:
+  hrms-web:
+    build:
+      target: build          # stay on the SDK stage so we can dotnet watch
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      # Development encryption keys loaded from .env (see .env.example)
+      Encryption__Key: ${ENCRYPTION_KEY:-0000000000000000000000000000000000000000000000000000000000000000}
+      Encryption__IV:  ${ENCRYPTION_IV:-00000000000000000000000000000000}
+      ConnectionStrings__DefaultConnection: >-
+        Server=sqlserver,1433;Database=HRMSDb_Dev;
+        User Id=sa;Password=${SQL_PASSWORD:-Dev_P@ssw0rd_2024!};
+        TrustServerCertificate=True;MultipleActiveResultSets=true;
+      ConnectionStrings__Redis: ""    # use in-process cache in development
+    volumes:
+      # Mount source for hot-reload (dotnet watch)
+      - ./src:/src/src:delegated
+      - ./tests:/src/tests:delegated
+    command: >
+      bash -c "cd /src &&
+               dotnet watch run --project src/HRMS.Web/HRMS.Web.csproj
+                                --launch-profile Docker"
+
+  sqlserver:
+    environment:
+      MSSQL_SA_PASSWORD: ${SQL_PASSWORD:-Dev_P@ssw0rd_2024!}
+
+  redis:
+    command: redis-server   # no password in development

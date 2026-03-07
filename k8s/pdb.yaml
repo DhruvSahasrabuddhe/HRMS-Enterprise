@@ -1,0 +1,15 @@
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: hrms-web
+  namespace: hrms
+  labels:
+    app.kubernetes.io/name: hrms-enterprise
+    app.kubernetes.io/component: web
+spec:
+  # Ensure at least 2 pods are always available during voluntary disruptions
+  # (node drains, rolling updates, cluster upgrades, etc.)
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app: hrms-web

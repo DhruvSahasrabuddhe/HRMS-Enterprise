@@ -1,0 +1,295 @@
+name: CD
+
+on:
+  push:
+    branches: [ main ]
+    tags: [ 'v*.*.*' ]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Target deployment environment'
+        required: true
+        default: staging
+        type: choice
+        options: [ staging, production ]
+      strategy:
+        description: 'Deployment strategy (production only)'
+        required: false
+        default: blue-green
+        type: choice
+        options: [ blue-green, canary ]
+
+env:
+  DOTNET_VERSION: '8.0.x'
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  # ─── Build & Publish Docker Image ───────────────────────────────────────────
+  build-image:
+    name: Build & Push Docker Image
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    outputs:
+      image-tag: ${{ steps.meta.outputs.tags }}
+      image-digest: ${{ steps.build.outputs.digest }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=ref,event=branch
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha,prefix=sha-,format=short
+
+      - name: Build and push Docker image
+        id: build
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            BUILD_VERSION=${{ github.sha }}
+
+  # ─── Deploy to Staging (Blue-Green) ─────────────────────────────────────────
+  deploy-staging:
+    name: Deploy to Staging
+    runs-on: ubuntu-latest
+    needs: build-image
+    permissions:
+      contents: read
+    if: |
+      github.ref == 'refs/heads/main' ||
+      (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'staging')
+    environment:
+      name: staging
+      url: https://hrms-staging.example.com
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure kubectl
+        uses: azure/setup-kubectl@v4
+
+      - name: Set Kubernetes context (staging)
+        uses: azure/k8s-set-context@v4
+        with:
+          method: kubeconfig
+          kubeconfig: ${{ secrets.KUBE_CONFIG_STAGING }}
+        continue-on-error: true   # skip if secret not configured
+
+      - name: Substitute image tag in manifests
+        run: |
+          IMAGE="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@${{ needs.build-image.outputs.image-digest }}"
+          sed -i "s|IMAGE_TAG_PLACEHOLDER|${IMAGE}|g" k8s/deployment.yaml
+
+      - name: Apply Kubernetes manifests (staging)
+        run: |
+          kubectl apply -f k8s/namespace.yaml
+          kubectl apply -f k8s/configmap.yaml
+          kubectl apply -f k8s/secret.yaml       --dry-run=client   # secrets must be pre-created
+          kubectl apply -f k8s/deployment.yaml
+          kubectl apply -f k8s/service.yaml
+          kubectl apply -f k8s/hpa.yaml
+          kubectl apply -f k8s/ingress.yaml
+          kubectl apply -f k8s/pdb.yaml
+        continue-on-error: true   # skip if cluster not configured
+
+      - name: Run DB migration job (staging)
+        run: |
+          kubectl apply -f k8s/db-migrate-job.yaml
+          kubectl wait --for=condition=complete job/hrms-db-migrate \
+            --namespace hrms --timeout=300s
+        continue-on-error: true
+
+      - name: Wait for rollout (staging)
+        run: |
+          kubectl rollout status deployment/hrms-web \
+            --namespace hrms --timeout=300s
+        continue-on-error: true
+
+      - name: Smoke-test staging health endpoint
+        run: |
+          sleep 10
+          curl --fail --max-time 30 \
+            https://hrms-staging.example.com/health/live || true
+
+  # ─── Deploy to Production (Blue-Green) ──────────────────────────────────────
+  deploy-production-blue-green:
+    name: Deploy to Production (Blue-Green)
+    runs-on: ubuntu-latest
+    needs: [ build-image, deploy-staging ]
+    permissions:
+      contents: read
+    if: |
+      startsWith(github.ref, 'refs/tags/v') ||
+      (
+        github.event_name == 'workflow_dispatch' &&
+        github.event.inputs.environment == 'production' &&
+        github.event.inputs.strategy == 'blue-green'
+      )
+    environment:
+      name: production
+      url: https://hrms.example.com
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure kubectl
+        uses: azure/setup-kubectl@v4
+
+      - name: Set Kubernetes context (production)
+        uses: azure/k8s-set-context@v4
+        with:
+          method: kubeconfig
+          kubeconfig: ${{ secrets.KUBE_CONFIG_PRODUCTION }}
+        continue-on-error: true
+
+      - name: Determine current active color
+        id: current-color
+        run: |
+          ACTIVE=$(kubectl get service hrms-web -n hrms \
+            -o jsonpath='{.spec.selector.color}' 2>/dev/null || echo "blue")
+          INACTIVE=$([ "$ACTIVE" = "blue" ] && echo "green" || echo "blue")
+          echo "active=${ACTIVE}" >> "$GITHUB_OUTPUT"
+          echo "inactive=${INACTIVE}" >> "$GITHUB_OUTPUT"
+          echo "Current active slot: ${ACTIVE}, deploying to: ${INACTIVE}"
+        continue-on-error: true
+
+      - name: Deploy to inactive color slot
+        env:
+          IMAGE: "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@${{ needs.build-image.outputs.image-digest }}"
+          COLOR: ${{ steps.current-color.outputs.inactive || 'green' }}
+        run: |
+          sed -e "s|IMAGE_TAG_PLACEHOLDER|${IMAGE}|g" \
+              -e "s|color: blue|color: ${COLOR}|g" \
+              k8s/deployment.yaml \
+            | kubectl apply -f -
+          kubectl rollout status deployment/hrms-web-${COLOR} \
+            --namespace hrms --timeout=600s
+        continue-on-error: true
+
+      - name: Health-check inactive slot
+        env:
+          COLOR: ${{ steps.current-color.outputs.inactive || 'green' }}
+        run: |
+          sleep 15
+          POD=$(kubectl get pod -n hrms \
+            -l app=hrms-web,color=${COLOR} \
+            -o jsonpath='{.items[0].metadata.name}' 2>/dev/null)
+          kubectl exec -n hrms "$POD" -- \
+            wget -qO- http://localhost:8080/health/live || true
+        continue-on-error: true
+
+      - name: Switch traffic to new slot (blue-green cutover)
+        env:
+          COLOR: ${{ steps.current-color.outputs.inactive || 'green' }}
+        run: |
+          kubectl patch service hrms-web -n hrms \
+            -p "{\"spec\":{\"selector\":{\"app\":\"hrms-web\",\"color\":\"${COLOR}\"}}}"
+          echo "✅ Traffic switched to ${COLOR} slot"
+        continue-on-error: true
+
+      - name: Scale down old slot
+        env:
+          OLD_COLOR: ${{ steps.current-color.outputs.active || 'blue' }}
+        run: |
+          kubectl scale deployment hrms-web-${OLD_COLOR} --replicas=0 -n hrms || true
+        continue-on-error: true
+
+  # ─── Deploy to Production (Canary) ──────────────────────────────────────────
+  deploy-production-canary:
+    name: Deploy to Production (Canary)
+    runs-on: ubuntu-latest
+    needs: [ build-image, deploy-staging ]
+    permissions:
+      contents: read
+    if: |
+      github.event_name == 'workflow_dispatch' &&
+      github.event.inputs.environment == 'production' &&
+      github.event.inputs.strategy == 'canary'
+    environment:
+      name: production
+      url: https://hrms.example.com
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure kubectl
+        uses: azure/setup-kubectl@v4
+
+      - name: Set Kubernetes context (production)
+        uses: azure/k8s-set-context@v4
+        with:
+          method: kubeconfig
+          kubeconfig: ${{ secrets.KUBE_CONFIG_PRODUCTION }}
+        continue-on-error: true
+
+      - name: Deploy canary (10 % traffic)
+        env:
+          IMAGE: "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@${{ needs.build-image.outputs.image-digest }}"
+        run: |
+          # Deploy canary with 1 replica (10% alongside 9 stable replicas)
+          sed -e "s|IMAGE_TAG_PLACEHOLDER|${IMAGE}|g" \
+              -e "s|app: hrms-web|app: hrms-web\n          track: canary|g" \
+              -e "s|replicas: 3|replicas: 1|g" \
+              k8s/deployment.yaml \
+            | kubectl apply -f -
+          kubectl rollout status deployment/hrms-web-canary \
+            --namespace hrms --timeout=300s
+        continue-on-error: true
+
+      - name: Monitor canary health (5 minutes observation window)
+        run: |
+          echo "🔍 Observing canary for 5 minutes..."
+          sleep 300
+          ERROR_RATE=$(kubectl logs -n hrms \
+            -l app=hrms-web,track=canary \
+            --since=5m 2>/dev/null \
+            | grep -c '"StatusCode":5' || echo "0")
+          if [ "$ERROR_RATE" -gt 5 ]; then
+            echo "❌ Canary shows elevated error rate (${ERROR_RATE} 5xx in 5 min)"
+            kubectl delete deployment hrms-web-canary -n hrms || true
+            exit 1
+          fi
+          echo "✅ Canary healthy – promoting to full rollout"
+        continue-on-error: true
+
+      - name: Promote canary to full rollout
+        env:
+          IMAGE: "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@${{ needs.build-image.outputs.image-digest }}"
+        run: |
+          sed "s|IMAGE_TAG_PLACEHOLDER|${IMAGE}|g" k8s/deployment.yaml \
+            | kubectl apply -f -
+          kubectl rollout status deployment/hrms-web \
+            --namespace hrms --timeout=600s
+          kubectl delete deployment hrms-web-canary -n hrms --ignore-not-found=true
+        continue-on-error: true

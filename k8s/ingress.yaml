@@ -1,0 +1,42 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: hrms-web
+  namespace: hrms
+  labels:
+    app.kubernetes.io/name: hrms-enterprise
+    app.kubernetes.io/component: ingress
+  annotations:
+    # nginx ingress controller
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "60"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "60"
+    nginx.ingress.kubernetes.io/proxy-body-size: "10m"
+
+    # TLS / cert-manager
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+
+    # Security headers (supplement app-level headers)
+    nginx.ingress.kubernetes.io/configuration-snippet: |
+      more_set_headers "Strict-Transport-Security: max-age=31536000; includeSubDomains; preload";
+
+    # Rate limiting at ingress layer (1000 req/min per IP)
+    nginx.ingress.kubernetes.io/limit-rps: "20"
+    nginx.ingress.kubernetes.io/limit-connections: "10"
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - hrms.example.com
+      secretName: hrms-tls-cert
+  rules:
+    - host: hrms.example.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: hrms-web
+                port:
+                  number: 80
