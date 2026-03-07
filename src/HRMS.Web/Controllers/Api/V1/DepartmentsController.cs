@@ -15,6 +15,7 @@ namespace HRMS.Web.Controllers.Api.V1
     /// requests.  Individual records and mutations always return <c>no-store</c>.
     /// </remarks>
     [Authorize(Roles = "Admin,HR")]
+    [IgnoreAntiforgeryToken]
     public class DepartmentsController : ApiControllerBase
     {
         private readonly IDepartmentService _departmentService;
@@ -110,6 +111,7 @@ namespace HRMS.Web.Controllers.Api.V1
         /// <response code="401">Authentication required.</response>
         /// <response code="403">Insufficient role.</response>
         [HttpPost]
+        [IgnoreAntiforgeryToken]
         [ProducesResponseType(typeof(DepartmentDto), StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]

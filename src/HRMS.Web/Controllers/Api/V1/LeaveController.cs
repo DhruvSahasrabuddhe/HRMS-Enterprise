@@ -19,6 +19,7 @@ namespace HRMS.Web.Controllers.Api.V1
     /// </list>
     /// </remarks>
     [Authorize(Roles = "Admin,HR,Manager")]
+    [IgnoreAntiforgeryToken]
     public class LeaveController : ApiControllerBase
     {
         private readonly ILeaveService _leaveService;
@@ -148,6 +149,7 @@ namespace HRMS.Web.Controllers.Api.V1
         /// <response code="403">Insufficient role.</response>
         /// <response code="422">Business rule violation (e.g. insufficient balance, overlapping dates).</response>
         [HttpPost]
+        [IgnoreAntiforgeryToken]
         [ProducesResponseType(typeof(LeaveRequestDto), StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -214,6 +216,7 @@ namespace HRMS.Web.Controllers.Api.V1
         /// <response code="403">Manager or Admin/HR role required.</response>
         /// <response code="404">Leave request not found.</response>
         [HttpPost("{id:int}/approve")]
+        [IgnoreAntiforgeryToken]
         [ProducesResponseType(typeof(LeaveRequestDto), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -246,6 +249,7 @@ namespace HRMS.Web.Controllers.Api.V1
         /// <response code="403">Manager or Admin/HR role required.</response>
         /// <response code="404">Leave request not found.</response>
         [HttpPost("{id:int}/reject")]
+        [IgnoreAntiforgeryToken]
         [ProducesResponseType(typeof(LeaveRequestDto), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -278,6 +282,7 @@ namespace HRMS.Web.Controllers.Api.V1
         /// <response code="404">Leave request not found.</response>
         [HttpPost("{id:int}/cancel")]
         [Authorize(Roles = "Admin,HR,Manager,Employee")]
+        [IgnoreAntiforgeryToken]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]

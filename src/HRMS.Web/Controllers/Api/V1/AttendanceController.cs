@@ -18,6 +18,7 @@ namespace HRMS.Web.Controllers.Api.V1
     /// Monthly summaries are available at <c>GET /api/v1/attendance/employee/{id}/summary</c>.
     /// </remarks>
     [Authorize(Roles = "Admin,HR,Manager")]
+    [IgnoreAntiforgeryToken]
     public class AttendanceController : ApiControllerBase
     {
         private readonly IAttendanceService _attendanceService;
@@ -127,6 +128,7 @@ namespace HRMS.Web.Controllers.Api.V1
         /// <response code="401">Authentication required.</response>
         /// <response code="403">Insufficient role.</response>
         [HttpPost]
+        [IgnoreAntiforgeryToken]
         [ProducesResponseType(typeof(AttendanceDto), StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -154,6 +156,7 @@ namespace HRMS.Web.Controllers.Api.V1
         /// <response code="403">Insufficient role.</response>
         [HttpPost("check-in")]
         [Authorize(Roles = "Admin,HR,Manager,Employee")]
+        [IgnoreAntiforgeryToken]
         [ProducesResponseType(typeof(AttendanceDto), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -187,6 +190,7 @@ namespace HRMS.Web.Controllers.Api.V1
         /// <response code="403">Insufficient role.</response>
         [HttpPost("check-out")]
         [Authorize(Roles = "Admin,HR,Manager,Employee")]
+        [IgnoreAntiforgeryToken]
         [ProducesResponseType(typeof(AttendanceDto), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]

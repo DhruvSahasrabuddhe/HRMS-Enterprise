@@ -23,6 +23,7 @@ namespace HRMS.Web.Controllers.Api.V1
     /// with an additional <c>errorCode</c> and <c>correlationId</c> field.
     /// </remarks>
     [Authorize(Roles = "Admin,HR")]
+    [IgnoreAntiforgeryToken]
     public class EmployeesController : ApiControllerBase
     {
         private readonly IEmployeeService _employeeService;
@@ -127,6 +128,7 @@ namespace HRMS.Web.Controllers.Api.V1
         /// <response code="403">Insufficient role.</response>
         /// <response code="422">Business rule violation (e.g. duplicate email).</response>
         [HttpPost]
+        [IgnoreAntiforgeryToken]
         [ProducesResponseType(typeof(EmployeeDto), StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]

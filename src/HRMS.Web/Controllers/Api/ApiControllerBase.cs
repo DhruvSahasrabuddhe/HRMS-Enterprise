@@ -11,8 +11,20 @@ namespace HRMS.Web.Controllers.Api
     /// so every derived controller benefits from these cross-cutting concerns without
     /// repeating boilerplate.
     /// </summary>
+    /// <remarks>
+    /// <para><strong>CSRF protection</strong>: REST API endpoints do not use antiforgery
+    /// tokens.  Protection against cross-site request forgery is provided by the
+    /// ASP.NET Core Identity cookie's <c>SameSite=Lax</c> attribute (the default),
+    /// which prevents the browser from sending the session cookie on cross-origin
+    /// requests initiated by third-party pages.  Consumers that are not browsers
+    /// (mobile clients, server-to-server integrations) must supply the cookie
+    /// explicitly and are therefore outside the CSRF threat model.
+    /// The <see cref="IgnoreAntiforgeryTokenAttribute"/> is applied here to make
+    /// this security decision explicit and avoid false-positive analyzer warnings.</para>
+    /// </remarks>
     [Authorize]
     [ApiController]
+    [IgnoreAntiforgeryToken]
     [Route(HrmsConstants.Api.RoutePrefix + "/[controller]")]
     [Produces("application/json")]
     public abstract class ApiControllerBase : ControllerBase

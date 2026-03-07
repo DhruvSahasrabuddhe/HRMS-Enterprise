@@ -23,6 +23,7 @@ namespace HRMS.Web.Controllers.Api.V1
     /// </remarks>
     [Authorize(Roles = "Admin,HR,Manager")]
     [Route(HrmsConstants.Api.RoutePrefix + "/performance-reviews")]
+    [IgnoreAntiforgeryToken]
     public class PerformanceReviewsController : ApiControllerBase
     {
         private readonly IPerformanceReviewService _reviewService;
@@ -132,6 +133,7 @@ namespace HRMS.Web.Controllers.Api.V1
         /// <response code="401">Authentication required.</response>
         /// <response code="403">Insufficient role.</response>
         [HttpPost]
+        [IgnoreAntiforgeryToken]
         [ProducesResponseType(typeof(PerformanceReviewDto), StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -198,6 +200,7 @@ namespace HRMS.Web.Controllers.Api.V1
         /// <response code="404">Review not found.</response>
         [HttpPost("{id:int}/self-assessment")]
         [Authorize(Roles = "Admin,HR,Manager,Employee")]
+        [IgnoreAntiforgeryToken]
         [ProducesResponseType(typeof(PerformanceReviewDto), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -227,6 +230,7 @@ namespace HRMS.Web.Controllers.Api.V1
         /// <response code="403">Manager or Admin/HR role required.</response>
         /// <response code="404">Review not found.</response>
         [HttpPost("{id:int}/manager-review")]
+        [IgnoreAntiforgeryToken]
         [ProducesResponseType(typeof(PerformanceReviewDto), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -257,6 +261,7 @@ namespace HRMS.Web.Controllers.Api.V1
         /// <response code="404">Review not found.</response>
         [HttpPost("{id:int}/finalize")]
         [Authorize(Roles = "Admin,HR")]
+        [IgnoreAntiforgeryToken]
         [ProducesResponseType(typeof(PerformanceReviewDto), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -289,6 +294,7 @@ namespace HRMS.Web.Controllers.Api.V1
         /// <response code="404">Review not found.</response>
         [HttpPost("{id:int}/acknowledge")]
         [Authorize(Roles = "Admin,HR,Manager,Employee")]
+        [IgnoreAntiforgeryToken]
         [ProducesResponseType(typeof(PerformanceReviewDto), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]

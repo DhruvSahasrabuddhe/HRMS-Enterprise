@@ -20,6 +20,7 @@ namespace HRMS.Web.Controllers.Api.V1
     /// All monetary values are in the local currency and returned as decimal numbers.
     /// </remarks>
     [Authorize(Roles = "Admin,HR")]
+    [IgnoreAntiforgeryToken]
     public class PayrollController : ApiControllerBase
     {
         private readonly IPayrollService _payrollService;
@@ -170,6 +171,7 @@ namespace HRMS.Web.Controllers.Api.V1
         /// <response code="403">Insufficient role.</response>
         /// <response code="422">Business rule violation (e.g. payroll already processed).</response>
         [HttpPost("process")]
+        [IgnoreAntiforgeryToken]
         [ProducesResponseType(typeof(PayrollDto), StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -201,6 +203,7 @@ namespace HRMS.Web.Controllers.Api.V1
         /// <response code="403">Admin role required.</response>
         [HttpPost("bulk-process")]
         [Authorize(Roles = "Admin")]
+        [IgnoreAntiforgeryToken]
         [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -232,6 +235,7 @@ namespace HRMS.Web.Controllers.Api.V1
         /// <response code="404">Payroll not found.</response>
         [HttpPost("{id:int}/approve")]
         [Authorize(Roles = "Admin")]
+        [IgnoreAntiforgeryToken]
         [ProducesResponseType(typeof(PayrollDto), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -264,6 +268,7 @@ namespace HRMS.Web.Controllers.Api.V1
         /// <response code="404">Payroll not found.</response>
         [HttpPost("{id:int}/mark-paid")]
         [Authorize(Roles = "Admin")]
+        [IgnoreAntiforgeryToken]
         [ProducesResponseType(typeof(PayrollDto), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
