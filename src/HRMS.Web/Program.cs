@@ -246,7 +246,8 @@ try
 
     app.MapRazorPages();
 
-    // Ensure database is created and seeded
+    // Ensure database is created and seeded (skip in automated test environments)
+    if (!app.Environment.IsEnvironment("Testing"))
     using (var scope = app.Services.CreateScope())
     {
         var services = scope.ServiceProvider;
@@ -279,3 +280,5 @@ finally
 {
     Log.CloseAndFlush();
 }
+// Expose Program class for integration tests
+public partial class Program { }
