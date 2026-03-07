@@ -16,6 +16,8 @@ using HRMS.Services.Employees.Queries;
 using HRMS.Services.Leave;
 using HRMS.Services.Mappings;
 using HRMS.Services.Validators;
+using HRMS.Shared.Constants;
+using HRMS.Web.Middleware;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
@@ -39,7 +41,24 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 // Add Identity
 builder.Services.AddDefaultIdentity<IdentityUser>(options =>
 {
+    // Password policy configuration
+    options.Password.RequiredLength = HrmsConstants.Security.MinPasswordLength;
+    options.Password.RequireDigit = HrmsConstants.Security.RequireDigit;
+    options.Password.RequireLowercase = HrmsConstants.Security.RequireLowercase;
+    options.Password.RequireUppercase = HrmsConstants.Security.RequireUppercase;
+    options.Password.RequireNonAlphanumeric = HrmsConstants.Security.RequireNonAlphanumeric;
+    options.Password.RequiredUniqueChars = HrmsConstants.Security.RequiredUniqueChars;
+
+    // Account lockout configuration
+    options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(HrmsConstants.Security.LockoutDurationMinutes);
+    options.Lockout.MaxFailedAccessAttempts = HrmsConstants.Security.MaxFailedAccessAttempts;
+    options.Lockout.AllowedForNewUsers = HrmsConstants.Security.AllowedForNewUsers;
+
+    // Sign-in configuration
     options.SignIn.RequireConfirmedAccount = false;
+
+    // User configuration
+    options.User.RequireUniqueEmail = true;
 })
 .AddRoles<IdentityRole>()
 .AddEntityFrameworkStores<ApplicationDbContext>();
@@ -55,6 +74,7 @@ builder.Services.AddScoped<IAttendanceRepository, AttendanceRepository>();
 // Add infrastructure services
 builder.Services.AddSingleton<IDateTimeProvider, DateTimeProvider>();
 builder.Services.AddScoped<IEmployeeCodeGenerator, EmployeeCodeGenerator>();
+builder.Services.AddScoped<IEncryptionService, EncryptionService>();
 
 // Add Services
 builder.Services.AddScoped<IEmployeeService, EmployeeService>();
@@ -89,6 +109,12 @@ if (!app.Environment.IsDevelopment())
     app.UseHsts();
 }
 
+// Security headers middleware (should be one of the first middleware)
+app.UseSecurityHeaders();
+
+// Request logging middleware
+app.UseRequestLogging();
+
 app.UseHttpsRedirection();
 app.UseStaticFiles(); // This is CRITICAL for CSS/JS to load
 
@@ -104,7 +130,7 @@ app.MapControllerRoute(
 
 app.MapRazorPages();
 
-// Ensure database is created
+// Ensure database is created and seeded
 using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;
@@ -112,11 +138,18 @@ using (var scope = app.Services.CreateScope())
     {
         var context = services.GetRequiredService<ApplicationDbContext>();
         context.Database.Migrate();
+
+        // Seed roles and admin user
+        var userManager = services.GetRequiredService<UserManager<IdentityUser>>();
+        var roleManager = services.GetRequiredService<RoleManager<IdentityRole>>();
+        var logger = services.GetRequiredService<ILogger<Program>>();
+        
+        await DbInitializer.SeedAsync(userManager, roleManager, logger);
     }
     catch (Exception ex)
     {
         var logger = services.GetRequiredService<ILogger<Program>>();
-        logger.LogError(ex, "An error occurred while migrating the database.");
+        logger.LogError(ex, "An error occurred while migrating or seeding the database.");
     }
 }
 
