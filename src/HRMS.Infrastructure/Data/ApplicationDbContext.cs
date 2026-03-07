@@ -31,6 +31,8 @@ namespace HRMS.Infrastructure.Data
         public DbSet<Attendance> Attendances { get; set; }
         public DbSet<AuditLog> AuditLogs { get; set; }
         public DbSet<Notification> Notifications { get; set; }
+        public DbSet<PerformanceReview> PerformanceReviews { get; set; }
+        public DbSet<Payroll> Payrolls { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -44,6 +46,8 @@ namespace HRMS.Infrastructure.Data
             builder.Entity<Department>().HasQueryFilter(d => !d.IsDeleted);
             builder.Entity<LeaveRequest>().HasQueryFilter(l => !l.IsDeleted);
             builder.Entity<Attendance>().HasQueryFilter(a => !a.IsDeleted);
+            builder.Entity<PerformanceReview>().HasQueryFilter(r => !r.IsDeleted);
+            builder.Entity<Payroll>().HasQueryFilter(p => !p.IsDeleted);
 
             // Configure relationships
             ConfigureRelationships(builder);
@@ -91,6 +95,41 @@ namespace HRMS.Infrastructure.Data
                 .WithMany(e => e.Attendances)
                 .HasForeignKey(a => a.EmployeeId)
                 .OnDelete(DeleteBehavior.Cascade);
+
+            // PerformanceReview - Employee relationship
+            builder.Entity<PerformanceReview>()
+                .HasOne(r => r.Employee)
+                .WithMany()
+                .HasForeignKey(r => r.EmployeeId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // PerformanceReview - Reviewer relationship
+            builder.Entity<PerformanceReview>()
+                .HasOne(r => r.Reviewer)
+                .WithMany()
+                .HasForeignKey(r => r.ReviewerId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // Payroll - Employee relationship
+            builder.Entity<Payroll>()
+                .HasOne(p => p.Employee)
+                .WithMany()
+                .HasForeignKey(p => p.EmployeeId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // Payroll - ProcessedBy relationship
+            builder.Entity<Payroll>()
+                .HasOne(p => p.ProcessedBy)
+                .WithMany()
+                .HasForeignKey(p => p.ProcessedById)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // Payroll - ApprovedBy relationship
+            builder.Entity<Payroll>()
+                .HasOne(p => p.ApprovedBy)
+                .WithMany()
+                .HasForeignKey(p => p.ApprovedById)
+                .OnDelete(DeleteBehavior.Restrict);
         }
 
         private void ConfigureIndexes(ModelBuilder builder)
@@ -167,6 +206,36 @@ namespace HRMS.Infrastructure.Data
 
             builder.Entity<AuditLog>()
                 .HasIndex(a => new { a.UserId, a.Timestamp });
+
+            // PerformanceReview indexes
+            builder.Entity<PerformanceReview>()
+                .HasIndex(r => r.EmployeeId);
+
+            builder.Entity<PerformanceReview>()
+                .HasIndex(r => r.ReviewerId);
+
+            builder.Entity<PerformanceReview>()
+                .HasIndex(r => r.Status);
+
+            builder.Entity<PerformanceReview>()
+                .HasIndex(r => new { r.EmployeeId, r.ReviewYear, r.CycleType });
+
+            builder.Entity<PerformanceReview>()
+                .HasIndex(r => r.DueDate);
+
+            // Payroll indexes
+            builder.Entity<Payroll>()
+                .HasIndex(p => p.EmployeeId);
+
+            builder.Entity<Payroll>()
+                .HasIndex(p => new { p.Year, p.Month });
+
+            builder.Entity<Payroll>()
+                .HasIndex(p => new { p.EmployeeId, p.Year, p.Month })
+                .IsUnique();
+
+            builder.Entity<Payroll>()
+                .HasIndex(p => p.Status);
         }
 
         private void SeedData(ModelBuilder builder)

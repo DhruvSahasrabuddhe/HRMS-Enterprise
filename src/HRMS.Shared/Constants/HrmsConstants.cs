@@ -230,6 +230,93 @@ namespace HRMS.Shared.Constants
         }
 
         /// <summary>
+        /// Payroll calculation constants.
+        /// </summary>
+        public static class Payroll
+        {
+            // Tax brackets (annual income thresholds)
+            public const decimal TaxBracket1Limit = 50_000m;
+            public const decimal TaxBracket2Limit = 100_000m;
+            public const decimal TaxBracket3Limit = 200_000m;
+
+            // Tax rates
+            public const decimal TaxRate1 = 0.10m;   // 10% up to bracket 1
+            public const decimal TaxRate2 = 0.20m;   // 20% up to bracket 2
+            public const decimal TaxRate3 = 0.30m;   // 30% up to bracket 3
+            public const decimal TaxRate4 = 0.35m;   // 35% above bracket 3
+
+            // Statutory deductions
+            public const decimal ProvidentFundRate = 0.12m;  // 12% of basic salary
+            public const decimal EmployerPfRate = 0.12m;     // 12% employer contribution
+            public const decimal EsiRate = 0.0075m;          // 0.75% ESI (employee)
+            public const decimal EmployerEsiRate = 0.0325m;  // 3.25% ESI (employer)
+            public const decimal EsiEligibilityLimit = 21_000m; // Monthly gross limit for ESI
+
+            // Allowances as percentage of basic salary
+            public const decimal HraRate = 0.40m;            // HRA: 40% of basic
+            public const decimal HraMetroRate = 0.50m;       // HRA metro: 50% of basic
+            public const decimal ConveyanceAllowance = 1_600m; // Fixed monthly
+            public const decimal MedicalAllowance = 1_250m;  // Fixed monthly
+
+            // Standard deductions
+            public const decimal StandardDeductionAnnual = 50_000m;
+
+            // Months per year
+            public const int MonthsPerYear = 12;
+
+            // Cache keys
+            public static string PayrollKey(int id) => $"payroll_{id}";
+            public static string EmployeePayrollKey(int employeeId, int year, int month) =>
+                $"payroll_emp_{employeeId}_{year}_{month}";
+        }
+
+        /// <summary>
+        /// Performance review constants.
+        /// </summary>
+        public static class Performance
+        {
+            public const int MinRating = 1;
+            public const int MaxRating = 5;
+            public const double TargetAchievementWeight = 0.60;
+            public const double CompetencyWeight = 0.40;
+            public const int DefaultGoalCount = 5;
+            public const int ReviewCycleDays = 365;
+
+            // Cache keys
+            public static string ReviewKey(int id) => $"review_{id}";
+            public static string EmployeeReviewsKey(int employeeId) => $"employee_reviews_{employeeId}";
+        }
+
+        /// <summary>
+        /// Attendance service constants.
+        /// </summary>
+        public static class Attendance
+        {
+            public const int StandardWorkHours = 8;
+            public const int OvertimeThresholdMinutes = 30;
+            public const int LateThresholdMinutes = 15;
+            public const string DefaultWorkStartTime = "09:00";
+        }
+
+        /// <summary>
+        /// Report constants for export and scheduling.
+        /// </summary>
+        public static class Reports
+        {
+            public const string ExcelContentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+            public const string PdfContentType = "application/pdf";
+            public const string ExcelExtension = ".xlsx";
+            public const string PdfExtension = ".pdf";
+            public const int MaxExportRows = 10_000;
+
+            // Worksheet names
+            public const string EmployeeSheetName = "Employees";
+            public const string LeaveSheetName = "Leave Requests";
+            public const string AttendanceSheetName = "Attendance";
+            public const string PayrollSheetName = "Payroll";
+        }
+
+        /// <summary>
         /// Health-check endpoint and check-name constants.
         /// </summary>
         public static class HealthChecks

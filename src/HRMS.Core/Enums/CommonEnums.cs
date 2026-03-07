@@ -87,7 +87,52 @@
         ApproveLeaves = 10,
         ViewReports = 11,
         ManageUsers = 12,
-        ManageRoles = 13
+        ManageRoles = 13,
+        ManagePayroll = 14,
+        ManagePerformance = 15
     }
 
+    public enum PerformanceRating
+    {
+        Unsatisfactory = 1,
+        NeedsImprovement = 2,
+        MeetsExpectations = 3,
+        ExceedsExpectations = 4,
+        Outstanding = 5
+    }
+
+    public enum PerformanceReviewStatus
+    {
+        Draft = 1,
+        SelfAssessmentPending = 2,
+        ManagerReviewPending = 3,
+        HrReviewPending = 4,
+        Completed = 5,
+        Acknowledged = 6
+    }
+
+    public enum ReviewCycleType
+    {
+        Annual = 1,
+        MidYear = 2,
+        Quarterly = 3,
+        Probation = 4,
+        Adhoc = 5
+    }
+
+    public enum PayrollStatus
+    {
+        Draft = 1,
+        Processed = 2,
+        Approved = 3,
+        Paid = 4,
+        Cancelled = 5
+    }
+
+    public enum PayFrequency
+    {
+        Monthly = 1,
+        BiMonthly = 2,
+        Weekly = 3
+    }
 }

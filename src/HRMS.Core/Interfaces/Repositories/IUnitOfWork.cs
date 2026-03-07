@@ -6,6 +6,8 @@
         IDepartmentRepository Departments { get; }
         ILeaveRepository Leaves { get; }
         IAttendanceRepository Attendances { get; }
+        IPerformanceReviewRepository PerformanceReviews { get; }
+        IPayrollRepository Payrolls { get; }
 
         Task<int> CompleteAsync();
         Task BeginTransactionAsync();

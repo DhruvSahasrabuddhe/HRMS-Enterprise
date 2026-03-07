@@ -14,6 +14,8 @@ namespace HRMS.Infrastructure.Repositories
         private IDepartmentRepository? _departmentRepository;
         private ILeaveRepository? _leaveRepository;
         private IAttendanceRepository? _attendanceRepository;
+        private IPerformanceReviewRepository? _performanceReviewRepository;
+        private IPayrollRepository? _payrollRepository;
 
         public UnitOfWork(ApplicationDbContext context)
         {
@@ -31,6 +33,12 @@ namespace HRMS.Infrastructure.Repositories
 
         public IAttendanceRepository Attendances =>
             _attendanceRepository ??= new AttendanceRepository(_context);
+
+        public IPerformanceReviewRepository PerformanceReviews =>
+            _performanceReviewRepository ??= new PerformanceReviewRepository(_context);
+
+        public IPayrollRepository Payrolls =>
+            _payrollRepository ??= new PayrollRepository(_context);
 
         public async Task<int> CompleteAsync()
         {
