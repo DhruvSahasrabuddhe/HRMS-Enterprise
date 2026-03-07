@@ -102,38 +102,17 @@ namespace HRMS.Services.Employees
             {
                 _logger.LogInformation("Searching employees with term: {SearchTerm}", searchDto.SearchTerm);
 
-                IEnumerable<Employee> employees;
-
-                if (!string.IsNullOrWhiteSpace(searchDto.SearchTerm))
-                {
-                    employees = await _unitOfWork.Employees.SearchEmployeesAsync(searchDto.SearchTerm);
-                }
-                else if (searchDto.DepartmentId.HasValue)
-                {
-                    employees = await _unitOfWork.Employees.GetEmployeesByDepartmentAsync(searchDto.DepartmentId.Value);
-                }
-                else if (searchDto.ManagerId.HasValue)
-                {
-                    employees = await _unitOfWork.Employees.GetEmployeesByManagerAsync(searchDto.ManagerId.Value);
-                }
-                else
-                {
-                    employees = await _unitOfWork.Employees.GetAllAsync();
-                }
-
-                // Apply status filter
-                if (searchDto.Status.HasValue)
-                {
-                    employees = employees.Where(e => e.Status == searchDto.Status.Value);
-                }
-
-                // Apply sorting
-                employees = ApplySorting(employees, searchDto);
-
-                // Apply pagination
-                employees = employees
-                    .Skip((searchDto.PageNumber - 1) * searchDto.PageSize)
-                    .Take(searchDto.PageSize);
+                // Delegate all filtering, sorting and pagination to the database to avoid
+                // loading the full result set into memory (eliminates in-memory N+1 pattern).
+                var employees = await _unitOfWork.Employees.SearchEmployeesPagedAsync(
+                    searchDto.SearchTerm,
+                    searchDto.DepartmentId,
+                    searchDto.ManagerId,
+                    searchDto.Status,
+                    searchDto.SortBy ?? "LastName",
+                    searchDto.SortAscending,
+                    searchDto.PageNumber,
+                    searchDto.PageSize);
 
                 return _mapper.Map<IEnumerable<EmployeeListDto>>(employees);
             }
@@ -317,29 +296,5 @@ namespace HRMS.Services.Employees
 
 
 
-        private IEnumerable<Employee> ApplySorting(IEnumerable<Employee> employees, EmployeeSearchDto searchDto)
-        {
-            if (employees == null || !employees.Any())
-                return Enumerable.Empty<Employee>();
-
-            return searchDto.SortBy?.ToLower() switch
-            {
-                "firstname" => searchDto.SortAscending
-                    ? employees.OrderBy(e => e.FirstName)
-                    : employees.OrderByDescending(e => e.FirstName),
-                "lastname" => searchDto.SortAscending
-                    ? employees.OrderBy(e => e.LastName)
-                    : employees.OrderByDescending(e => e.LastName),
-                "hiredate" => searchDto.SortAscending
-                    ? employees.OrderBy(e => e.HireDate)
-                    : employees.OrderByDescending(e => e.HireDate),
-                "department" => searchDto.SortAscending
-                    ? employees.OrderBy(e => e.Department != null ? e.Department.Name : "")
-                    : employees.OrderByDescending(e => e.Department != null ? e.Department.Name : ""),
-                _ => searchDto.SortAscending
-                    ? employees.OrderBy(e => e.LastName)
-                    : employees.OrderByDescending(e => e.LastName)
-            };
-        }
     }
 }

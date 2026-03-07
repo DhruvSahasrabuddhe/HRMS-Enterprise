@@ -10,15 +10,46 @@ namespace HRMS.Shared.Constants
         /// </summary>
         public static class Cache
         {
+            /// <summary>Default absolute expiration for cached items (minutes).</summary>
             public const int DefaultExpirationMinutes = 5;
+
+            /// <summary>Sliding expiration for frequently-accessed items (minutes).</summary>
+            public const int SlidingExpirationMinutes = 2;
+
+            /// <summary>Longer absolute expiration for reference data that rarely changes (minutes).</summary>
+            public const int LongExpirationMinutes = 30;
+
+            // List / collection cache keys
             public const string EmployeeListKey = "employees_list";
             public const string AllDepartmentsKey = "all_departments";
             public const string AllLeavesKey = "all_leaves";
-            
+            public const string AllNotificationsKey = "all_notifications";
+
+            // Per-entity cache-key factories
             public static string EmployeeKey(int id) => $"employee_{id}";
             public static string DepartmentKey(int id) => $"department_{id}";
             public static string LeaveKey(int id) => $"leave_{id}";
             public static string EmployeeLeavesKey(int employeeId) => $"employee_leaves_{employeeId}";
+            public static string AttendanceKey(int id) => $"attendance_{id}";
+            public static string EmployeeAttendanceKey(int employeeId) => $"employee_attendance_{employeeId}";
+        }
+
+        /// <summary>
+        /// Database connection and resilience constants.
+        /// </summary>
+        public static class Database
+        {
+            /// <summary>Maximum number of transient-failure retries for SQL connections.</summary>
+            public const int MaxRetryCount = 5;
+
+            /// <summary>Maximum delay (seconds) between retry attempts.</summary>
+            public const int MaxRetryDelaySeconds = 30;
+
+            /// <summary>Default command timeout in seconds.</summary>
+            public const int CommandTimeoutSeconds = 30;
+
+            /// <summary>Maximum number of statements batched in a single round-trip.</summary>
+            public const int MaxBatchSize = 100;
         }
 
         /// <summary>

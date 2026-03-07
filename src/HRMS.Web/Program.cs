@@ -33,10 +33,19 @@ builder.Services.AddHttpContextAccessor();
 // Add current-user service (resolves identity from HTTP context)
 builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
 
-// Add DbContext
+// Add DbContext with connection resilience and command-timeout configuration
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(
-        builder.Configuration.GetConnectionString("DefaultConnection")));
+        builder.Configuration.GetConnectionString("DefaultConnection"),
+        sqlOptions =>
+        {
+            sqlOptions.EnableRetryOnFailure(
+                maxRetryCount: HrmsConstants.Database.MaxRetryCount,
+                maxRetryDelay: TimeSpan.FromSeconds(HrmsConstants.Database.MaxRetryDelaySeconds),
+                errorNumbersToAdd: null);
+            sqlOptions.CommandTimeout(HrmsConstants.Database.CommandTimeoutSeconds);
+            sqlOptions.MaxBatchSize(HrmsConstants.Database.MaxBatchSize);
+        }));
 
 // Add Identity
 builder.Services.AddDefaultIdentity<IdentityUser>(options =>
@@ -97,8 +106,28 @@ builder.Services.AddAutoMapper(typeof(MappingProfile));
 builder.Services.AddFluentValidationAutoValidation();
 builder.Services.AddValidatorsFromAssemblyContaining<CreateEmployeeValidator>();
 
-// Add Memory Cache
+// Add Memory Cache (in-process, always available)
 builder.Services.AddMemoryCache();
+
+// Add Distributed Cache.
+// When a Redis connection string is configured, use Redis; otherwise fall back to the
+// in-process distributed-cache implementation so the application works out-of-the-box.
+var redisConnectionString = builder.Configuration.GetConnectionString("Redis");
+if (!string.IsNullOrWhiteSpace(redisConnectionString))
+{
+    builder.Services.AddStackExchangeRedisCache(options =>
+    {
+        options.Configuration = redisConnectionString;
+        options.InstanceName = "HRMS:";
+    });
+}
+else
+{
+    builder.Services.AddDistributedMemoryCache();
+}
+
+// Register the typed distributed-cache abstraction used by application services.
+builder.Services.AddScoped<IDistributedCacheService, DistributedCacheService>();
 
 var app = builder.Build();
 
