@@ -116,6 +116,14 @@ namespace HRMS.Infrastructure.Data
             builder.Entity<Employee>()
                 .HasIndex(e => e.Status);
 
+            // Composite index: supports dashboard queries that filter on both Status and DepartmentId.
+            builder.Entity<Employee>()
+                .HasIndex(e => new { e.Status, e.DepartmentId });
+
+            // HireDate index: supports date-range hire reports.
+            builder.Entity<Employee>()
+                .HasIndex(e => e.HireDate);
+
             // Department indexes
             builder.Entity<Department>()
                 .HasIndex(d => d.Code)
@@ -135,6 +143,10 @@ namespace HRMS.Infrastructure.Data
             builder.Entity<LeaveRequest>()
                 .HasIndex(l => l.Status);
 
+            // Composite index: supports leave-balance and pending-approval queries.
+            builder.Entity<LeaveRequest>()
+                .HasIndex(l => new { l.EmployeeId, l.Status });
+
             builder.Entity<LeaveRequest>()
                 .HasIndex(l => new { l.StartDate, l.EndDate });
 
@@ -148,6 +160,13 @@ namespace HRMS.Infrastructure.Data
             builder.Entity<Attendance>()
                 .HasIndex(a => new { a.EmployeeId, a.Date })
                 .IsUnique();
+
+            // AuditLog indexes: support entity-history and user-activity queries.
+            builder.Entity<AuditLog>()
+                .HasIndex(a => new { a.Entity, a.EntityId });
+
+            builder.Entity<AuditLog>()
+                .HasIndex(a => new { a.UserId, a.Timestamp });
         }
 
         private void SeedData(ModelBuilder builder)

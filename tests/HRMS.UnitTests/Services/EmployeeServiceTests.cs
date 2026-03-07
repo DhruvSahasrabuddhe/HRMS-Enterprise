@@ -300,5 +300,85 @@ namespace HRMS.UnitTests.Services
 
             await Assert.ThrowsAsync<KeyNotFoundException>(() => _sut.DeleteEmployeeAsync(999));
         }
+
+        // ────────────────────── SearchEmployeesAsync (paged) ─────────────────────
+
+        [Fact]
+        public async Task SearchEmployeesAsync_DelegatesToPagedRepository()
+        {
+            // Arrange
+            var dept = new Department { Id = 2, Name = "Finance", Code = "FIN" };
+            var employees = new List<Employee>
+            {
+                new() { Id = 10, FirstName = "Zara", LastName = "Ali", Email = "z@x.com",
+                        JobTitle = "Analyst", EmployeeCode = "EMP00010",
+                        DepartmentId = 2, Department = dept, Status = EmployeeStatus.Active }
+            };
+
+            var searchDto = new EmployeeSearchDto
+            {
+                SearchTerm = "Zara",
+                DepartmentId = null,
+                ManagerId = null,
+                Status = EmployeeStatus.Active,
+                SortBy = "FirstName",
+                SortAscending = true,
+                PageNumber = 1,
+                PageSize = 10
+            };
+
+            _employeeRepoMock
+                .Setup(r => r.SearchEmployeesPagedAsync(
+                    "Zara", null, null, EmployeeStatus.Active, "FirstName", true, 1, 10))
+                .ReturnsAsync(employees);
+
+            // Act
+            var result = (await _sut.SearchEmployeesAsync(searchDto)).ToList();
+
+            // Assert
+            Assert.Single(result);
+            Assert.Equal("Zara", result[0].FirstName);
+
+            // Verify that the new DB-side method is called (not the legacy in-memory path).
+            _employeeRepoMock.Verify(
+                r => r.SearchEmployeesPagedAsync(
+                    "Zara", null, null, EmployeeStatus.Active, "FirstName", true, 1, 10),
+                Times.Once);
+        }
+
+        [Fact]
+        public async Task SearchEmployeesAsync_WithNoFilters_ReturnsPagedResults()
+        {
+            // Arrange
+            var dept = new Department { Id = 1, Name = "IT", Code = "IT" };
+            var employees = new List<Employee>
+            {
+                new() { Id = 1, FirstName = "Alice", LastName = "A", Email = "a@x.com",
+                        JobTitle = "Dev", EmployeeCode = "EMP00001",
+                        DepartmentId = 1, Department = dept },
+                new() { Id = 2, FirstName = "Bob", LastName = "B", Email = "b@x.com",
+                        JobTitle = "QA", EmployeeCode = "EMP00002",
+                        DepartmentId = 1, Department = dept }
+            };
+
+            var searchDto = new EmployeeSearchDto
+            {
+                PageNumber = 1,
+                PageSize = 10,
+                SortBy = "LastName",
+                SortAscending = true
+            };
+
+            _employeeRepoMock
+                .Setup(r => r.SearchEmployeesPagedAsync(
+                    null, null, null, null, "LastName", true, 1, 10))
+                .ReturnsAsync(employees);
+
+            // Act
+            var result = (await _sut.SearchEmployeesAsync(searchDto)).ToList();
+
+            // Assert
+            Assert.Equal(2, result.Count);
+        }
     }
 }

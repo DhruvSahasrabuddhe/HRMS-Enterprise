@@ -75,15 +75,11 @@ namespace HRMS.Infrastructure.Repositories
 
         public async Task<IEnumerable<LeaveRequest>> GetPendingApprovalsAsync(int managerId)
         {
-            // Get employees under this manager
-            var employeeIds = await _context.Set<Employee>()
-                .Where(e => e.ManagerId == managerId)
-                .Select(e => e.Id)
-                .ToListAsync();
-
+            // Single JOIN query – avoids the two-trip N+1 pattern.
             return await _dbSet
-                .Where(l => employeeIds.Contains(l.EmployeeId)
-                    && l.Status == LeaveStatus.Pending)
+                .Where(l => l.Status == LeaveStatus.Pending
+                         && l.Employee != null
+                         && l.Employee.ManagerId == managerId)
                 .Include(l => l.Employee)
                 .Include(l => l.ApprovedBy)
                 .OrderBy(l => l.StartDate)
@@ -105,15 +101,12 @@ namespace HRMS.Infrastructure.Repositories
 
         public async Task<IEnumerable<LeaveRequest>> GetLeaveRequestsByDepartmentAsync(int departmentId, DateTime startDate, DateTime endDate)
         {
-            var employeeIds = await _context.Set<Employee>()
-                .Where(e => e.DepartmentId == departmentId)
-                .Select(e => e.Id)
-                .ToListAsync();
-
+            // Single JOIN query – avoids the two-trip N+1 pattern.
             return await _dbSet
-                .Where(l => employeeIds.Contains(l.EmployeeId)
-                    && l.StartDate >= startDate
-                    && l.EndDate <= endDate)
+                .Where(l => l.Employee != null
+                         && l.Employee.DepartmentId == departmentId
+                         && l.StartDate >= startDate
+                         && l.EndDate <= endDate)
                 .Include(l => l.Employee)
                 .Include(l => l.ApprovedBy)
                 .OrderBy(l => l.StartDate)

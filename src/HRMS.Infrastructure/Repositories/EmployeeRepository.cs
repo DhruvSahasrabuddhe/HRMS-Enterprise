@@ -1,4 +1,5 @@
 ﻿using HRMS.Core.Entities;
+using HRMS.Core.Enums;
 using HRMS.Core.Interfaces.Repositories;
 using HRMS.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
@@ -45,6 +46,63 @@ namespace HRMS.Infrastructure.Repositories
                            e.Email.ToLower().Contains(searchTerm) ||
                            e.EmployeeCode.ToLower().Contains(searchTerm))
                 .Include(e => e.Department)
+                .ToListAsync();
+        }
+
+        /// <inheritdoc/>
+        public async Task<IEnumerable<Employee>> SearchEmployeesPagedAsync(
+            string? searchTerm,
+            int? departmentId,
+            int? managerId,
+            EmployeeStatus? status,
+            string sortBy,
+            bool sortAscending,
+            int pageNumber,
+            int pageSize)
+        {
+            var query = _dbSet.Include(e => e.Department).AsQueryable();
+
+            // ── Filtering ──────────────────────────────────────────────────────────
+            if (!string.IsNullOrWhiteSpace(searchTerm))
+            {
+                var term = searchTerm.ToLower();
+                query = query.Where(e =>
+                    e.FirstName.ToLower().Contains(term) ||
+                    e.LastName.ToLower().Contains(term) ||
+                    e.Email.ToLower().Contains(term) ||
+                    e.EmployeeCode.ToLower().Contains(term));
+            }
+
+            if (departmentId.HasValue)
+                query = query.Where(e => e.DepartmentId == departmentId.Value);
+
+            if (managerId.HasValue)
+                query = query.Where(e => e.ManagerId == managerId.Value);
+
+            if (status.HasValue)
+                query = query.Where(e => e.Status == status.Value);
+
+            // ── Sorting (database-side) ────────────────────────────────────────────
+            query = sortBy.ToLower() switch
+            {
+                "firstname" => sortAscending
+                    ? query.OrderBy(e => e.FirstName)
+                    : query.OrderByDescending(e => e.FirstName),
+                "hiredate" => sortAscending
+                    ? query.OrderBy(e => e.HireDate)
+                    : query.OrderByDescending(e => e.HireDate),
+                "department" => sortAscending
+                    ? query.OrderBy(e => e.Department != null ? e.Department.Name : string.Empty)
+                    : query.OrderByDescending(e => e.Department != null ? e.Department.Name : string.Empty),
+                _ => sortAscending   // default: sort by LastName
+                    ? query.OrderBy(e => e.LastName)
+                    : query.OrderByDescending(e => e.LastName)
+            };
+
+            // ── Pagination (database-side) ─────────────────────────────────────────
+            return await query
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
                 .ToListAsync();
         }
 

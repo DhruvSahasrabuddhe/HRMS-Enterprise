@@ -3,6 +3,7 @@ using FluentValidation;
 using HRMS.Core.Entities;
 using HRMS.Core.Interfaces.Repositories;
 using HRMS.Services.Departments.Dtos;
+using HRMS.Shared.Constants;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 
@@ -40,7 +41,7 @@ namespace HRMS.Services.Departments
                 _logger.LogInformation("Getting department with ID: {DepartmentId}", id);
 
                 // Try cache first
-                var cacheKey = $"department_{id}";
+                var cacheKey = HrmsConstants.Cache.DepartmentKey(id);
                 if (_cache.TryGetValue(cacheKey, out DepartmentDto? cachedDepartment))
                 {
                     return cachedDepartment;
@@ -55,8 +56,7 @@ namespace HRMS.Services.Departments
 
                 var departmentDto = _mapper.Map<DepartmentDto>(department);
 
-                // Cache for 5 minutes
-                _cache.Set(cacheKey, departmentDto, TimeSpan.FromMinutes(5));
+                _cache.Set(cacheKey, departmentDto, TimeSpan.FromMinutes(HrmsConstants.Cache.DefaultExpirationMinutes));
 
                 return departmentDto;
             }
@@ -74,7 +74,7 @@ namespace HRMS.Services.Departments
                 _logger.LogInformation("Getting all departments");
 
                 // Try cache first
-                const string cacheKey = "all_departments";
+                const string cacheKey = HrmsConstants.Cache.AllDepartmentsKey;
                 if (_cache.TryGetValue(cacheKey, out IEnumerable<DepartmentListDto>? cachedDepartments))
                 {
                     return cachedDepartments ?? Enumerable.Empty<DepartmentListDto>();
@@ -83,8 +83,7 @@ namespace HRMS.Services.Departments
                 var departments = await _unitOfWork.Departments.GetDepartmentsWithEmployeeCountAsync();
                 var departmentDtos = _mapper.Map<IEnumerable<DepartmentListDto>>(departments);
 
-                // Cache for 5 minutes
-                _cache.Set(cacheKey, departmentDtos, TimeSpan.FromMinutes(5));
+                _cache.Set(cacheKey, departmentDtos, TimeSpan.FromMinutes(HrmsConstants.Cache.DefaultExpirationMinutes));
 
                 return departmentDtos;
             }
@@ -153,7 +152,7 @@ namespace HRMS.Services.Departments
                 _logger.LogInformation("Department created successfully with ID: {DepartmentId}", department.Id);
 
                 // Clear cache
-                _cache.Remove("all_departments");
+                _cache.Remove(HrmsConstants.Cache.AllDepartmentsKey);
 
                 return _mapper.Map<DepartmentDto>(department);
             }
@@ -212,8 +211,8 @@ namespace HRMS.Services.Departments
                 _logger.LogInformation("Department {DepartmentId} updated successfully", department.Id);
 
                 // Clear cache
-                _cache.Remove($"department_{department.Id}");
-                _cache.Remove("all_departments");
+                _cache.Remove(HrmsConstants.Cache.DepartmentKey(department.Id));
+                _cache.Remove(HrmsConstants.Cache.AllDepartmentsKey);
 
                 return _mapper.Map<DepartmentDto>(department);
             }
@@ -253,8 +252,8 @@ namespace HRMS.Services.Departments
                 _logger.LogInformation("Department {DepartmentId} deleted successfully", id);
 
                 // Clear cache
-                _cache.Remove($"department_{id}");
-                _cache.Remove("all_departments");
+                _cache.Remove(HrmsConstants.Cache.DepartmentKey(id));
+                _cache.Remove(HrmsConstants.Cache.AllDepartmentsKey);
 
                 return true;
             }
