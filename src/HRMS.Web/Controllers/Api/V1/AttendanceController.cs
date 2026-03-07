@@ -23,7 +23,7 @@ namespace HRMS.Web.Controllers.Api.V1
         private readonly IAttendanceService _attendanceService;
         private readonly ILogger<AttendanceController> _logger;
 
-        /// <summary>Initialises the controller with its required services.</summary>
+        /// <summary>Initializes the controller with its required services.</summary>
         public AttendanceController(IAttendanceService attendanceService, ILogger<AttendanceController> logger)
         {
             _attendanceService = attendanceService;

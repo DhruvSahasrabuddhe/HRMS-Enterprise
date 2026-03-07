@@ -25,7 +25,7 @@ namespace HRMS.Web.Controllers.Api.V1
         private readonly IPayrollService _payrollService;
         private readonly ILogger<PayrollController> _logger;
 
-        /// <summary>Initialises the controller with its required services.</summary>
+        /// <summary>Initializes the controller with its required services.</summary>
         public PayrollController(IPayrollService payrollService, ILogger<PayrollController> logger)
         {
             _payrollService = payrollService;

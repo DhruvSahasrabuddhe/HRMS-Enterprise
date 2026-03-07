@@ -20,7 +20,7 @@ namespace HRMS.Web.Controllers.Api.V1
         private readonly IDepartmentService _departmentService;
         private readonly ILogger<DepartmentsController> _logger;
 
-        /// <summary>Initialises the controller with its required services.</summary>
+        /// <summary>Initializes the controller with its required services.</summary>
         public DepartmentsController(IDepartmentService departmentService, ILogger<DepartmentsController> logger)
         {
             _departmentService = departmentService;

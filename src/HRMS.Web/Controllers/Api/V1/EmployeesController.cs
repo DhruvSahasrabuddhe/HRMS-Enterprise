@@ -28,7 +28,7 @@ namespace HRMS.Web.Controllers.Api.V1
         private readonly IEmployeeService _employeeService;
         private readonly ILogger<EmployeesController> _logger;
 
-        /// <summary>Initialises the controller with its required services.</summary>
+        /// <summary>Initializes the controller with its required services.</summary>
         public EmployeesController(IEmployeeService employeeService, ILogger<EmployeesController> logger)
         {
             _employeeService = employeeService;

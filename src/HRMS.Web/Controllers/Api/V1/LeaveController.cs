@@ -24,7 +24,7 @@ namespace HRMS.Web.Controllers.Api.V1
         private readonly ILeaveService _leaveService;
         private readonly ILogger<LeaveController> _logger;
 
-        /// <summary>Initialises the controller with its required services.</summary>
+        /// <summary>Initializes the controller with its required services.</summary>
         public LeaveController(ILeaveService leaveService, ILogger<LeaveController> logger)
         {
             _leaveService = leaveService;

@@ -28,7 +28,7 @@ namespace HRMS.Web.Controllers.Api.V1
         private readonly IPerformanceReviewService _reviewService;
         private readonly ILogger<PerformanceReviewsController> _logger;
 
-        /// <summary>Initialises the controller with its required services.</summary>
+        /// <summary>Initializes the controller with its required services.</summary>
         public PerformanceReviewsController(
             IPerformanceReviewService reviewService,
             ILogger<PerformanceReviewsController> logger)
@@ -283,7 +283,7 @@ namespace HRMS.Web.Controllers.Api.V1
         /// <param name="id">The review identifier.</param>
         /// <param name="employeeId">The identifier of the employee acknowledging the review.</param>
         /// <response code="200">Review acknowledged.</response>
-        /// <response code="400">Review is not in a finalised state.</response>
+        /// <response code="400">Review is not in a finalized state.</response>
         /// <response code="401">Authentication required.</response>
         /// <response code="403">Insufficient role.</response>
         /// <response code="404">Review not found.</response>
