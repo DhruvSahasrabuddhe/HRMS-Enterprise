@@ -6,7 +6,7 @@ namespace HRMS.Web.HealthChecks
     /// <summary>
     /// Health check that reports business-level metrics: active employee count and
     /// whether the HR system has any departments configured.  A degraded result is
-    /// returned when the business data looks incomplete (e.g. no active employees).
+    /// returned when the business data looks incomplete (e.g. no departments configured).
     /// </summary>
     public class HrmsBusinessHealthCheck : IHealthCheck
     {
