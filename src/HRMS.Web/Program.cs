@@ -6,6 +6,7 @@ using HRMS.Core.Interfaces.Services;
 using HRMS.Infrastructure.Data;
 using HRMS.Infrastructure.Repositories;
 using HRMS.Infrastructure.Services;
+using HRMS.Services.Attendance;
 using HRMS.Services.Dashboard;
 using HRMS.Services.Departments;
 using HRMS.Services.Employees;
@@ -15,6 +16,9 @@ using HRMS.Services.Employees.Handlers;
 using HRMS.Services.Employees.Queries;
 using HRMS.Services.Leave;
 using HRMS.Services.Mappings;
+using HRMS.Services.Payroll;
+using HRMS.Services.PerformanceReviews;
+using HRMS.Services.Reports;
 using HRMS.Services.Validators;
 using HRMS.Shared.Constants;
 using HRMS.Web.HealthChecks;
@@ -112,6 +116,14 @@ try
     builder.Services.AddScoped<IDepartmentService, DepartmentService>();
     builder.Services.AddScoped<ILeaveService, LeaveService>();
     builder.Services.AddScoped<IDashboardService, DashboardService>();
+    builder.Services.AddScoped<IAttendanceService, AttendanceService>();
+    builder.Services.AddScoped<IPerformanceReviewService, PerformanceReviewService>();
+    builder.Services.AddScoped<IPayrollService, PayrollService>();
+    builder.Services.AddScoped<IReportService, ReportService>();
+
+    // Add Repositories for new entities
+    builder.Services.AddScoped<IPerformanceReviewRepository, PerformanceReviewRepository>();
+    builder.Services.AddScoped<IPayrollRepository, PayrollRepository>();
 
     // Register CQRS handlers for Employee domain
     builder.Services.AddScoped<ICommandHandler<CreateEmployeeCommand, EmployeeDto>, CreateEmployeeCommandHandler>();
