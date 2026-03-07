@@ -17,7 +17,6 @@ public class LoadTests
 
     // Acceptable upper-bound response times for each category of endpoint
     private const int HealthEndpointMaxMs = 2_000;
-    private const int StaticEndpointMaxMs = 1_000;
     private const int ConcurrentRequests = 20;
 
     public LoadTests(HrmsWebApplicationFactory factory)

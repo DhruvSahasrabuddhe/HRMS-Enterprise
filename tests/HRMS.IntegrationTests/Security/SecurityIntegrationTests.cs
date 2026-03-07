@@ -163,10 +163,12 @@ public class SecurityIntegrationTests
 
     // ── Large payloads are handled gracefully ─────────────────────────────────────
 
+    private const int MaxQueryStringLength = 10_000;
+
     [Fact]
     public async Task ExcessivelyLargeQueryString_DoesNotCauseUnhandledServerError()
     {
-        var longValue = new string('A', 10_000);
+        var longValue = new string('A', MaxQueryStringLength);
         var response = await _clientNoRedirect.GetAsync($"/Employee?searchTerm={longValue}");
 
         // Should redirect to login, not throw a 500
