@@ -1,9 +1,11 @@
 using System.Diagnostics;
+using HRMS.Shared.Constants;
 
 namespace HRMS.Web.Middleware
 {
     /// <summary>
-    /// Middleware to log all HTTP requests with IP address, user agent, and response time.
+    /// Middleware to log all HTTP requests with IP address, user agent, response time,
+    /// and the current correlation ID (set by <see cref="CorrelationIdMiddleware"/>).
     /// </summary>
     public class RequestLoggingMiddleware
     {
@@ -20,13 +22,17 @@ namespace HRMS.Web.Middleware
         {
             var stopwatch = Stopwatch.StartNew();
             var request = context.Request;
-            
+
             // Capture request information
             var ipAddress = context.Connection.RemoteIpAddress?.ToString() ?? "Unknown";
             var userAgent = request.Headers["User-Agent"].ToString();
             var method = request.Method;
             var path = request.Path;
             var user = context.User?.Identity?.Name ?? "Anonymous";
+            var correlationId = context.Items.TryGetValue(
+                HrmsConstants.Logging.CorrelationIdItemKey, out var id)
+                ? id?.ToString() ?? string.Empty
+                : string.Empty;
 
             try
             {
@@ -40,23 +46,23 @@ namespace HRMS.Web.Middleware
 
                 // Log the request details
                 _logger.LogInformation(
-                    "HTTP {Method} {Path} responded {StatusCode} in {Duration}ms | User: {User} | IP: {IpAddress} | UserAgent: {UserAgent}",
-                    method, path, statusCode, duration, user, ipAddress, userAgent);
+                    "HTTP {Method} {Path} responded {StatusCode} in {Duration}ms | User: {User} | IP: {IpAddress} | UserAgent: {UserAgent} | CorrelationId: {CorrelationId}",
+                    method, path, statusCode, duration, user, ipAddress, userAgent, correlationId);
 
-                // Log warning for slow requests (> 5 seconds)
-                if (duration > 5000)
+                // Log warning for slow requests
+                if (duration > HrmsConstants.Logging.SlowRequestThresholdMs)
                 {
                     _logger.LogWarning(
-                        "Slow request detected: {Method} {Path} took {Duration}ms | User: {User}",
-                        method, path, duration, user);
+                        "Slow request detected: {Method} {Path} took {Duration}ms | User: {User} | CorrelationId: {CorrelationId}",
+                        method, path, duration, user, correlationId);
                 }
 
                 // Log warning for 4xx and 5xx errors
                 if (statusCode >= 400)
                 {
                     _logger.LogWarning(
-                        "Request error: {Method} {Path} returned {StatusCode} | User: {User} | IP: {IpAddress}",
-                        method, path, statusCode, user, ipAddress);
+                        "Request error: {Method} {Path} returned {StatusCode} | User: {User} | IP: {IpAddress} | CorrelationId: {CorrelationId}",
+                        method, path, statusCode, user, ipAddress, correlationId);
                 }
             }
         }

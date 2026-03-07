@@ -210,5 +210,44 @@ namespace HRMS.Shared.Constants
             public const string BankName = "BankName";
             public const string BankBranch = "BankBranch";
         }
+
+        /// <summary>
+        /// Logging and structured-logging constants.
+        /// </summary>
+        public static class Logging
+        {
+            /// <summary>HTTP header name used to carry a correlation / trace identifier.</summary>
+            public const string CorrelationIdHeader = "X-Correlation-ID";
+
+            /// <summary>Key under which the correlation ID is stored in <c>HttpContext.Items</c>.</summary>
+            public const string CorrelationIdItemKey = "CorrelationId";
+
+            /// <summary>Property name used to enrich log entries with the correlation ID.</summary>
+            public const string CorrelationIdProperty = "CorrelationId";
+
+            /// <summary>Threshold (milliseconds) above which a request is considered slow.</summary>
+            public const int SlowRequestThresholdMs = 5000;
+        }
+
+        /// <summary>
+        /// Health-check endpoint and check-name constants.
+        /// </summary>
+        public static class HealthChecks
+        {
+            /// <summary>Route for the detailed health-check endpoint.</summary>
+            public const string DetailedEndpoint = "/health";
+
+            /// <summary>Route for the lightweight liveness probe endpoint.</summary>
+            public const string LiveEndpoint = "/health/live";
+
+            /// <summary>Name of the database connectivity health check.</summary>
+            public const string DatabaseCheckName = "database";
+
+            /// <summary>Tag applied to infrastructure-level health checks.</summary>
+            public const string InfrastructureTag = "infrastructure";
+
+            /// <summary>Tag applied to business-level health checks.</summary>
+            public const string BusinessTag = "business";
+        }
     }
 }
