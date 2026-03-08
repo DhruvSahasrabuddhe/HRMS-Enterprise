@@ -27,7 +27,9 @@ using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
+using Microsoft.OpenApi.Models;
 using Serilog;
+using System.Reflection;
 using System.Text.Json;
 
 // ─── Configure Serilog before the host is built so startup errors are captured ───
@@ -60,6 +62,71 @@ try
     // Add services to the container.
     builder.Services.AddControllersWithViews();
     builder.Services.AddRazorPages();
+
+    // ─── OpenAPI / Swagger ────────────────────────────────────────────────────────
+    // Swashbuckle is already included in the project.  We enable it for all
+    // environments so that API consumers (including integration tests) can
+    // discover the contract at /swagger/v1/swagger.json.
+    builder.Services.AddEndpointsApiExplorer();
+    builder.Services.AddSwaggerGen(options =>
+    {
+        options.SwaggerDoc(HrmsConstants.Api.CurrentVersion, new OpenApiInfo
+        {
+            Title = HrmsConstants.Api.Title,
+            Version = HrmsConstants.Api.CurrentVersion,
+            Description = HrmsConstants.Api.Description + "\n\n" +
+                "**Authentication**: All endpoints require a valid authenticated session " +
+                "(cookie-based via ASP.NET Core Identity).\n\n" +
+                "**Pagination**: Collection responses include `X-Total-Count`, `X-Total-Pages`, " +
+                "`X-Current-Page`, and `X-Page-Size` response headers.\n\n" +
+                "**Rate Limiting**: Every response includes `X-RateLimit-Limit`, " +
+                "`X-RateLimit-Remaining`, and `X-RateLimit-Reset` headers.\n\n" +
+                "**Errors**: All error responses follow the RFC 7807 Problem Details format " +
+                "with additional `errorCode` and `correlationId` fields.",
+            Contact = new OpenApiContact
+            {
+                Name = "HRMS Support",
+                Email = "support@hrms.example.com"
+            }
+        });
+
+        // Include XML documentation comments from the Web project.
+        var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
+        var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
+        if (File.Exists(xmlPath))
+        {
+            options.IncludeXmlComments(xmlPath);
+        }
+
+        // Document the cookie-based authentication scheme used by Identity.
+        options.AddSecurityDefinition("cookieAuth", new OpenApiSecurityScheme
+        {
+            Type = SecuritySchemeType.ApiKey,
+            In = ParameterLocation.Cookie,
+            Name = ".AspNetCore.Identity.Application",
+            Description = "ASP.NET Core Identity authentication cookie. " +
+                          "Log in via /Identity/Account/Login to obtain the session cookie."
+        });
+
+        options.AddSecurityRequirement(new OpenApiSecurityRequirement
+        {
+            {
+                new OpenApiSecurityScheme
+                {
+                    Reference = new OpenApiReference
+                    {
+                        Type = ReferenceType.SecurityScheme,
+                        Id = "cookieAuth"
+                    }
+                },
+                Array.Empty<string>()
+            }
+        });
+
+        // Only expose /api routes in the Swagger document (exclude MVC routes).
+        options.DocInclusionPredicate((_, apiDesc) =>
+            apiDesc.RelativePath?.StartsWith("api/", StringComparison.OrdinalIgnoreCase) == true);
+    });
 
     // Add HttpContextAccessor (registered early so it can be used by DbContext)
     builder.Services.AddHttpContextAccessor();
@@ -105,6 +172,34 @@ try
     })
     .AddRoles<IdentityRole>()
     .AddEntityFrameworkStores<ApplicationDbContext>();
+
+    // Configure the Identity application cookie so that requests to /api/* receive
+    // HTTP 401/403 JSON responses instead of being redirected to the login page.
+    // This allows REST clients to handle auth errors programmatically.
+    builder.Services.ConfigureApplicationCookie(options =>
+    {
+        options.Events.OnRedirectToLogin = context =>
+        {
+            if (context.Request.Path.StartsWithSegments("/api", StringComparison.OrdinalIgnoreCase))
+            {
+                context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+                return Task.CompletedTask;
+            }
+            context.Response.Redirect(context.RedirectUri);
+            return Task.CompletedTask;
+        };
+
+        options.Events.OnRedirectToAccessDenied = context =>
+        {
+            if (context.Request.Path.StartsWithSegments("/api", StringComparison.OrdinalIgnoreCase))
+            {
+                context.Response.StatusCode = StatusCodes.Status403Forbidden;
+                return Task.CompletedTask;
+            }
+            context.Response.Redirect(context.RedirectUri);
+            return Task.CompletedTask;
+        };
+    });
 
     // Add Repositories
     builder.Services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
@@ -213,6 +308,19 @@ try
 
     app.UseHttpsRedirection();
     app.UseStaticFiles(); // This is CRITICAL for CSS/JS to load
+
+    // ─── Swagger / OpenAPI ────────────────────────────────────────────────────────
+    // Enabled in all environments so API consumers and integration tests can always
+    // discover the OpenAPI contract at /swagger/v1/swagger.json.
+    app.UseSwagger();
+    app.UseSwaggerUI(options =>
+    {
+        options.SwaggerEndpoint(
+            $"/swagger/{HrmsConstants.Api.CurrentVersion}/swagger.json",
+            $"{HrmsConstants.Api.Title} {HrmsConstants.Api.CurrentVersion}");
+        options.RoutePrefix = "swagger";
+        options.DocumentTitle = HrmsConstants.Api.Title;
+    });
 
     app.UseRouting();
 
