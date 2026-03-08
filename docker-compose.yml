@@ -1,0 +1,100 @@
+# docker-compose.yml – Production-like local stack
+# All secrets are expected via a .env file (see .env.example).
+# TLS termination is handled by the reverse-proxy; services communicate over HTTP.
+
+services:
+  # ─── Application ─────────────────────────────────────────────────────────
+  hrms-web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        BUILD_VERSION: local
+    image: hrms-enterprise:local
+    container_name: hrms-web
+    restart: unless-stopped
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ConnectionStrings__DefaultConnection: >-
+        Server=sqlserver,1433;Database=HRMSDb;
+        User Id=${SQL_USER:-sa};Password=${SQL_PASSWORD:?SQL_PASSWORD required};
+        TrustServerCertificate=True;MultipleActiveResultSets=true;
+        ConnectRetryCount=3;ConnectRetryInterval=10;
+      ConnectionStrings__Redis: "redis:6379"
+      Encryption__Key: ${ENCRYPTION_KEY:?ENCRYPTION_KEY required}
+      Encryption__IV:  ${ENCRYPTION_IV:?ENCRYPTION_IV required}
+      RUN_MIGRATIONS: "true"
+    volumes:
+      - hrms-logs:/app/logs
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/health/live || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    networks:
+      - hrms-net
+
+  # ─── SQL Server ───────────────────────────────────────────────────────────
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: hrms-sqlserver
+    restart: unless-stopped
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: ${SQL_PASSWORD:?SQL_PASSWORD required}
+      MSSQL_PID: Express          # free tier; change to Developer or Standard as needed
+    ports:
+      - "1433:1433"
+    volumes:
+      - sqlserver-data:/var/opt/mssql
+    healthcheck:
+      test: >
+        /opt/mssql-tools18/bin/sqlcmd
+        -S localhost -U sa -P "$$MSSQL_SA_PASSWORD"
+        -C -Q "SELECT 1" -b -o /dev/null
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+    networks:
+      - hrms-net
+
+  # ─── Redis ────────────────────────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: hrms-redis
+    restart: unless-stopped
+    command: >
+      redis-server
+        --requirepass ${REDIS_PASSWORD:-}
+        --maxmemory 256mb
+        --maxmemory-policy allkeys-lru
+        --appendonly yes
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - hrms-net
+
+volumes:
+  sqlserver-data:
+  redis-data:
+  hrms-logs:
+
+networks:
+  hrms-net:
+    driver: bridge

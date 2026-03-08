@@ -1,0 +1,67 @@
+# db-migrate-job.yaml
+# One-off Kubernetes Job that runs EF Core migrations before a new application
+# version is rolled out.  The CD pipeline applies this Job and waits for it to
+# complete before updating the Deployment.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: hrms-db-migrate
+  namespace: hrms
+  labels:
+    app.kubernetes.io/name: hrms-enterprise
+    app.kubernetes.io/component: db-migrate
+spec:
+  backoffLimit: 3          # retry up to 3 times on failure
+  activeDeadlineSeconds: 300   # fail if not done in 5 minutes
+  ttlSecondsAfterFinished: 600  # automatically clean up 10 minutes after completion
+  template:
+    metadata:
+      labels:
+        app: hrms-db-migrate
+        app.kubernetes.io/name: hrms-enterprise
+        app.kubernetes.io/component: db-migrate
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: migrate
+          image: IMAGE_TAG_PLACEHOLDER   # same image as the app
+          imagePullPolicy: Always
+          command: ["dotnet", "HRMS.Web.dll"]
+          args: ["--migrate-only"]
+          envFrom:
+            - configMapRef:
+                name: hrms-config
+          env:
+            - name: ConnectionStrings__DefaultConnection
+              valueFrom:
+                secretKeyRef:
+                  name: hrms-secrets
+                  key: ConnectionStrings__DefaultConnection
+            - name: Encryption__Key
+              valueFrom:
+                secretKeyRef:
+                  name: hrms-secrets
+                  key: Encryption__Key
+            - name: Encryption__IV
+              valueFrom:
+                secretKeyRef:
+                  name: hrms-secrets
+                  key: Encryption__IV
+            # Skip running the full web server; only apply migrations
+            - name: RUN_MIGRATIONS
+              value: "true"
+            - name: ASPNETCORE_ENVIRONMENT
+              value: "Production"
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1001
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: [ "ALL" ]

@@ -330,6 +330,9 @@ namespace HRMS.Shared.Constants
             /// <summary>Name of the database connectivity health check.</summary>
             public const string DatabaseCheckName = "database";
 
+            /// <summary>Name of the Redis distributed-cache health check.</summary>
+            public const string RedisCheckName = "redis";
+
             /// <summary>Tag applied to infrastructure-level health checks.</summary>
             public const string InfrastructureTag = "infrastructure";
 
